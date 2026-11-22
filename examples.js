@@ -1,0 +1,27 @@
+/* Lesson circuits. Each is a netlist spec the editor lays out, wires up and simulates. */
+window.EXAMPLES = [
+  { id: 'led', title: 'Switch, resistor and LED', level: 'Start here', desc: 'Press Play, then click the switch. The resistor stops too much current from burning out the LED.',
+    spec: { title: 'LED with a switch', parts: [{ ref: 'SW1', part: 'SW', value: 'SWITCH', col: 0, row: 0 }, { ref: 'R1', part: 'R', value: '330', col: 1, row: 0 }, { ref: 'D1', part: 'LED', value: 'RED', col: 2, row: 0, rot: 1 }],
+      nets: [{ name: '+9V', pins: ['SW1.1'] }, { name: 'A', pins: ['SW1.2', 'R1.1'] }, { name: 'B', pins: ['R1.2', 'D1.1'] }, { name: 'GND', pins: ['D1.2'] }],
+      notes: 'Current = (9 V - 1.9 V LED drop) / 330 Ω ≈ 21 mA. Try deleting the resistor and pressing Play to see what happens to the LED.' } },
+  { id: 'divider', title: 'Voltage divider', level: 'Beginner', desc: 'Two resistors share the supply voltage. A voltmeter shows the middle point.',
+    spec: { title: 'Voltage divider', parts: [{ ref: 'R1', part: 'R', value: '10k', col: 0, row: 0, rot: 1 }, { ref: 'R2', part: 'R', value: '10k', col: 0, row: 1, rot: 1 }, { ref: 'VM1', part: 'VM', value: '', col: 1, row: 1 }],
+      nets: [{ name: '+9V', pins: ['R1.1'] }, { name: 'MID', pins: ['R1.2', 'R2.1', 'VM1.1'] }, { name: 'GND', pins: ['R2.2', 'VM1.2'] }],
+      notes: 'Vout = 9 V × R2 / (R1 + R2) = 4.5 V. Change R2 to 20k and press Reset: what does the meter show now?' } },
+  { id: 'rc', title: 'Capacitor charging (RC)', level: 'Beginner', desc: 'Close the switch and watch the capacitor fill up. Time to reach 63% is R × C.',
+    spec: { title: 'RC charging', parts: [{ ref: 'SW1', part: 'SW', value: 'SWITCH', col: 0, row: 0 }, { ref: 'R1', part: 'R', value: '10k', col: 1, row: 0 }, { ref: 'C1', part: 'CP', value: '100u', col: 2, row: 0, rot: 1 }, { ref: 'VM1', part: 'VM', value: '', col: 3, row: 0 }],
+      nets: [{ name: '+5V', pins: ['SW1.1'] }, { name: 'A', pins: ['SW1.2', 'R1.1'] }, { name: 'B', pins: ['R1.2', 'C1.1', 'VM1.1'] }, { name: 'GND', pins: ['C1.2', 'VM1.2'] }],
+      notes: 'Time constant τ = R × C = 10 kΩ × 100 µF = 1 s. After 1 s the capacitor has reached about 3.2 V (63% of 5 V).' } },
+  { id: 'transistor', title: 'Transistor as a switch', level: 'Intermediate', desc: 'A tiny current into the base switches a much bigger current through the LED.',
+    spec: { title: 'NPN transistor switch', parts: [{ ref: 'SW1', part: 'SW_PUSH', value: 'PRESS', col: 0, row: 1 }, { ref: 'R1', part: 'R', value: '10k', col: 1, row: 1 }, { ref: 'Q1', part: 'Q_NPN', value: '2N3904', col: 2, row: 1 }, { ref: 'R2', part: 'R', value: '470', col: 2, row: 0, rot: 1 }, { ref: 'D1', part: 'LED', value: 'GREEN', col: 3, row: 0, rot: 1 }],
+      nets: [{ name: '+9V', pins: ['SW1.1', 'R2.1'] }, { name: 'B1', pins: ['SW1.2', 'R1.1'] }, { name: 'B2', pins: ['R1.2', 'Q1.1'] }, { name: 'C1', pins: ['R2.2', 'D1.1'] }, { name: 'C2', pins: ['D1.2', 'Q1.2'] }, { name: 'GND', pins: ['Q1.3'] }],
+      notes: 'Hold the push button. Base current ≈ (9 V - 0.7 V) / 10 kΩ = 0.8 mA turns on about 17 mA through the LED. Select Q1 while running to see its currents.' } },
+  { id: 'flasher', title: '555 timer LED flasher', level: 'Intermediate', desc: 'A 555 chip charges and discharges a capacitor to flash an LED about 1.5 times a second.',
+    spec: { title: '555 astable LED flasher', parts: [{ ref: 'R1', part: 'R', value: '1k', col: 0, row: 0, rot: 1 }, { ref: 'R2', part: 'R', value: '47k', col: 1, row: 0, rot: 1 }, { ref: 'U1', part: 'NE555', value: 'NE555', col: 1, row: 1 }, { ref: 'C1', part: 'CP', value: '10u', col: 0, row: 1, rot: 1 }, { ref: 'C2', part: 'C', value: '10n', col: 2, row: 1, rot: 1 }, { ref: 'R3', part: 'R', value: '330', col: 3, row: 1 }, { ref: 'D1', part: 'LED', value: 'RED', col: 4, row: 1, rot: 1 }],
+      nets: [{ name: '+9V', pins: ['R1.1', 'U1.8', 'U1.4'] }, { name: 'DIS', pins: ['R1.2', 'R2.1', 'U1.7'] }, { name: 'TH', pins: ['R2.2', 'U1.2', 'U1.6', 'C1.1'] }, { name: 'GND', pins: ['U1.1', 'C1.2', 'C2.2', 'D1.2'] }, { name: 'CV', pins: ['U1.5', 'C2.1'] }, { name: 'OUT', pins: ['U1.3', 'R3.1'] }, { name: 'LED', pins: ['R3.2', 'D1.1'] }],
+      notes: 'Frequency ≈ 1.44 / ((R1 + 2·R2) · C1) = 1.5 Hz. Change C1 to 1u and press Reset to make it flash ten times faster.' } },
+  { id: 'opamp', title: 'Inverting amplifier', level: 'Advanced', desc: 'An op-amp with two resistors multiplies the input by -2.',
+    spec: { title: 'Inverting op-amp amplifier', parts: [{ ref: 'V1', part: 'VDC', value: '1V', col: 0, row: 1 }, { ref: 'R1', part: 'R', value: '10k', col: 1, row: 1 }, { ref: 'U1', part: 'OPAMP', value: 'LM358', col: 2, row: 1 }, { ref: 'R2', part: 'R', value: '20k', col: 2, row: 0 }, { ref: 'VM1', part: 'VM', value: '', col: 3, row: 1 }],
+      nets: [{ name: 'VIN', pins: ['V1.1', 'R1.1'] }, { name: 'INV', pins: ['R1.2', 'U1.1', 'R2.1'] }, { name: 'OUT', pins: ['R2.2', 'U1.3', 'VM1.1'] }, { name: '+12V', pins: ['U1.4'] }, { name: '-12V', pins: ['U1.5'] }, { name: 'GND', pins: ['V1.2', 'U1.2', 'VM1.2'] }],
+      notes: 'Gain = -R2 / R1 = -2, so 1 V in gives -2 V out. Click V1 and change its value to 3V, then Reset, to see the output hit its limit.' } }
+];

@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>WireFrame</title>
+<link rel="stylesheet" href="style.css">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="theme-color" content="#0b6e8a">
+</head>
+<body>
+<header id="top">
+  <div class="brand"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M2 12h5l2-5 4 10 2-5h7" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/></svg><b>WireFrame</b></div>
+  <nav class="tools" aria-label="Tools">
+    <button data-tool="select" class="tool on" title="Select (V)">Select</button>
+    <button data-tool="wire" class="tool" title="Draw wire (W)">Wire</button>
+    <button data-tool="label" class="tool" title="Net label (L)">Label</button>
+    <button data-tool="text" class="tool" title="Text note (T)">Note</button>
+    <span class="sep"></span>
+    <button id="bRot" title="Rotate (R)">Rotate</button>
+    <button id="bMir" title="Mirror (M)">Mirror</button>
+    <button id="bDel" title="Delete (Del)">Delete</button>
+    <span class="sep"></span>
+    <button id="bUndo" title="Undo (Ctrl+Z)">Undo</button>
+    <button id="bRedo" title="Redo (Ctrl+Y)">Redo</button>
+  </nav>
+  <div class="spacer"></div>
+  <div id="simbar" class="simbar"><button id="bPlay" class="play" title="Start the simulation (P)">▶ Play</button><button id="bReset" hidden title="Start again from zero">↺ Reset</button><button id="bStop" hidden title="Back to editing">■ Stop</button>
+    <span id="simOpts" hidden><label>Speed <select id="simSpeed" aria-label="Simulation speed"><option value="0.1">Slow-mo</option><option value="1" selected>Normal</option><option value="5">Fast</option><option value="25">Very fast</option></select></label> <label><input type="checkbox" id="simV" checked> Volts</label> <span id="simStat" class="stat"></span></span></div>
+  <nav class="tools right">
+    <button id="bExamples" title="Ready-made lesson circuits">Lessons</button>
+    <button id="bAI" class="accent">AI Assistant</button>
+    <button id="bERC" title="Check unconnected pins">Check</button>
+    <div class="menu"><button id="bFile">File ▾</button>
+      <div class="drop" id="fileMenu" hidden>
+        <button data-act="new">New sheet</button>
+        <button data-act="open">Open .json…</button>
+        <button data-act="save">Save .json</button>
+        <hr>
+        <button data-act="png">Export PNG</button>
+        <button data-act="svg">Export SVG</button>
+        <button data-act="copyimg">Copy picture to clipboard</button>
+        <button data-act="copysvg">Copy SVG to clipboard</button>
+        <button data-act="net">Export netlist (.txt)</button>
+        <hr>
+        <button data-act="libexp">Export my parts…</button>
+        <button data-act="libimp">Import parts…</button>
+        <button data-act="example">Lesson circuits…</button>
+      </div>
+    </div>
+    <button id="bTheme" title="Light / dark">Theme</button>
+  </nav>
+  <input type="file" id="fileIn" accept=".json,application/json" hidden>
+</header>
+
+<main id="work">
+  <aside id="lib" aria-label="Parts library">
+    <div class="pane-head"><b>Parts</b><button id="bNewPart" class="small">+ New part</button></div>
+    <input id="q" type="search" placeholder="Search parts…" aria-label="Search parts" autocomplete="off">
+    <div id="cats" class="chips"></div>
+    <div id="partList" role="listbox"></div>
+  </aside>
+
+  <section id="stage">
+    <svg id="svg" tabindex="0" aria-label="Schematic canvas"></svg>
+    <div id="hint" class="hint">Pick a part on the left, click the sheet to place it. Press W to draw wires.</div>
+    <div id="status"><span id="stPos">0, 0</span><span id="stNet"></span><span id="stZoom">100%</span>
+      <span class="grow"></span><button id="bFit" class="small">Fit</button></div>
+  </section>
+
+  <aside id="props" aria-label="Properties">
+    <div class="pane-head"><b>Properties</b></div>
+    <div id="propBody" class="pbody"><p class="muted">Select a part to edit its reference and value.</p></div>
+    <div class="pane-head"><b>Messages</b></div>
+    <div id="msgs" class="pbody"></div>
+  </aside>
+</main>
+
+<div id="modalHost"></div>
+<div id="toast" role="status" hidden></div>
+
+<script src="config.js"></script>
+<script src="parts.js"></script>
+<script src="parts_ic.js"></script>
+<script src="core.js"></script>
+<script src="render.js"></script>
+<script src="ui.js"></script>
+<script src="panels.js"></script>
+<script src="partedit.js"></script>
+<script src="sim.js"></script>
+<script src="simui.js"></script>
+<script src="examples.js"></script>
+<script src="ai.js"></script>
+<script src="boot.js"></script>
+</body>
+</html>
