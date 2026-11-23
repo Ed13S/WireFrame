@@ -152,7 +152,7 @@
       const wasH = o[1] === o[3], e = wasH ? [mv[0], fixed[1]] : [fixed[0], mv[1]]; A.doc.wires = A.doc.wires.filter(x => x !== w);
       [[fixed, e], [e, mv]].forEach(([a, b]) => { if (a[0] !== b[0] || a[1] !== b[1]) A.doc.wires.push({ id: A.id('w'), p: [a[0], a[1], b[0], b[1]] }); }); } }); }
   function finishWire() { S.draft = null; A.render(); }
-  svg.addEventListener('dblclick', e => { if (S.draft) { finishWire(); return; } if (e.target.closest && e.target.closest('[data-tb]')) { A.sheetDialog && A.sheetDialog(); return; } const id = hitId(e.target), it = id && findItem(id); if (it && it.text !== undefined) { askText('Edit text', it.text, v => { it.text = v; A.commit(); }); } else if (it && it.def) { const i = $('#pRef'); if (i) { i.focus(); i.select(); } } });
+  svg.addEventListener('dblclick', e => { if (S.draft) { finishWire(); return; } if (document.elementsFromPoint(e.clientX, e.clientY).some(n => n.hasAttribute && n.hasAttribute('data-tb'))) { A.sheetDialog && A.sheetDialog(); return; } const id = hitId(e.target), it = id && findItem(id); if (it && it.text !== undefined) { askText('Edit text', it.text, v => { it.text = v; A.commit(); }); } else if (it && it.def) { const i = $('#pRef'); if (i) { i.focus(); i.select(); } } });
   addEventListener('keyup', e => { if (e.code === 'Space') { S.space = false; svg.style.cursor = S.tool === 'select' ? 'default' : 'crosshair'; } });
   addEventListener('keydown', e => {
     const tag = (e.target.tagName || '').toLowerCase(); if (tag === 'input' || tag === 'textarea' || tag === 'select') return;

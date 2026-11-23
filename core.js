@@ -99,6 +99,27 @@ const App = window.App = {
     });
     const refs = {}; A.doc.parts.forEach(p => { if ((p.ref || '').startsWith('#')) return; (refs[p.ref] = refs[p.ref] || []).push(p); });
     Object.keys(refs).forEach(r => { if (refs[r].length > 1) res.push({ kind: 'bad', text: `Reference ${r} is used ${refs[r].length} times`, x: refs[r][0].x, y: refs[r][0].y }); });
+    /* ---- extra checks ---- */
+    const d = A.doc, isGnd = n => /^(GND|AGND|DGND|PGND|VSS|0V)$/i.test(n || '');
+    const lblPos = t => { const l = d.labels.find(x => x.text === t); return l ? { x: l.x, y: l.y } : { x: 0, y: 0 }; };
+    const lblCount = {}; d.labels.forEach(l => { lblCount[l.text] = (lblCount[l.text] || 0) + 1; });
+    nets.forEach(n => {
+      const pn = [...new Set(n.powerPins.map(p => p.inst.value || p.name))];
+      if (pn.length > 1) res.push({ kind: 'bad', text: `Short circuit: ${pn.join(' and ')} are joined together`, x: n.powerPins[0].x, y: n.powerPins[0].y });
+      const lt = [...new Set(n.labels)];
+      if (lt.length > 1) res.push({ kind: 'bad', text: `Labels ${lt.join(' and ')} are on the same wire, so they become one net`, ...lblPos(lt[0]) });
+      if (lt.length && pn.length && !lt.every(t => pn.includes(t))) res.push({ kind: 'bad', text: `Label ${lt[0]} is joined to power symbol ${pn[0]}`, ...lblPos(lt[0]) });
+      if (n.labels.length && !n.pins.length && !n.powerPins.length && !n.wires.length) res.push({ kind: 'bad', text: `Label ${n.labels[0]} is not connected to anything`, ...lblPos(n.labels[0]) });
+      else if (n.labels.length === 1 && lblCount[n.labels[0]] === 1 && n.pins.length <= 1 && !n.powerPins.length) res.push({ kind: 'warn', text: `Label ${n.labels[0]} is only used once, so it joins nothing. Is it spelled the same everywhere?`, ...lblPos(n.labels[0]) });
+      if (!n.pins.length && !n.powerPins.length && !n.labels.length && n.wires.length) { const w = d.wires.find(x => x.id === n.wires[0]); res.push({ kind: 'warn', text: 'A wire connects to nothing', x: w.p[0], y: w.p[1] }); }
+    });
+    d.parts.forEach(p => { if ((p.ref || '').startsWith('#')) return; const df = A.def(p.def); if (!df || df.power) return;
+      if (!(p.value || '').toString().trim() && /^(R|C|L|RV|VR|POT)\d/i.test(p.ref || '')) res.push({ kind: 'warn', text: `${p.ref} has no value (e.g. 330, 10k, 100u)`, x: p.x, y: p.y });
+      const pins = A.pinsOf(p); if (pins.length > 1) { const mine = nets.filter(n => n.pins.some(q => q.inst === p)); if (mine.length && mine.every(n => n.pins.filter(q => q.inst === p).length === n.pins.length && !n.wires.length && !n.labels.length && !n.powerPins.length)) res.push({ kind: 'bad', text: `${p.ref} is not wired to anything`, x: p.x, y: p.y });
+        else { const one = mine.find(n => n.pins.filter(q => q.inst === p).length > 1 && n.pins.length === n.pins.filter(q => q.inst === p).length); if (one && mine.length === 1) res.push({ kind: 'bad', text: `Every pin of ${p.ref} is joined to itself: it is shorted out`, x: p.x, y: p.y }); } } });
+    const seenAt = {}; d.parts.forEach(p => { const k = p.def + '@' + p.x + ',' + p.y; if (seenAt[k]) res.push({ kind: 'warn', text: `${p.ref} sits exactly on top of ${seenAt[k].ref}`, x: p.x, y: p.y }); else seenAt[k] = p; });
+    const real = d.parts.filter(p => !(p.ref || '').startsWith('#') && !(A.def(p.def) || {}).power);
+    if (real.length && !nets.some(n => isGnd(n.name) && (n.powerPins.length || n.labels.length))) res.push({ kind: 'warn', text: 'There is no ground (GND) symbol, so nothing has a 0 V reference', x: real[0].x, y: real[0].y });
     return res;
   };
   A.netlistText = () => {

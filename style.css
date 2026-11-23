@@ -168,3 +168,6 @@ header .tools{flex-wrap:nowrap;gap:3px}header .tools button{padding:5px 7px;whit
 @media (hover:none){.pjact{opacity:1}}
 .pjact button{padding:2px 7px;border-radius:6px;background:transparent;border:1px solid transparent}
 .pjact button:hover{border-color:var(--line);background:var(--panel)}
+
+.tbhit:hover{fill:rgba(180,255,0,.10)!important;stroke:var(--accent);stroke-width:.2}
+.msg.warn{border-left:3px solid #e6b800}
