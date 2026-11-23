@@ -13,21 +13,22 @@
 <body>
 <header id="top">
   <div class="brand"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M2 12h5l2-5 4 10 2-5h7" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/></svg><b>WireFrame</b></div>
+  <button id="bProj" class="projbtn" title="Your projects">📁 Projects ▾</button>
   <nav class="tools" aria-label="Tools">
-    <button data-tool="select" class="tool on" title="Select (V)">Select</button>
+    <button data-tool="select" class="tool on" title="Select (S)">Select</button>
     <button data-tool="wire" class="tool" title="Draw wire (W)">Wire</button>
     <button data-tool="label" class="tool" title="Net label (L)">Label</button>
     <button data-tool="text" class="tool" title="Text note (T)">Note</button>
     <span class="sep"></span>
     <button id="bRot" title="Rotate (R)">Rotate</button>
-    <button id="bMir" title="Mirror (M)">Mirror</button>
+    <button id="bMir" title="Mirror (X / Y)">Mirror</button>
     <button id="bDel" title="Delete (Del)">Delete</button>
     <span class="sep"></span>
     <button id="bUndo" title="Undo (Ctrl+Z)">Undo</button>
     <button id="bRedo" title="Redo (Ctrl+Y)">Redo</button>
   </nav>
   <div class="spacer"></div>
-  <div id="simbar" class="simbar"><button id="bPlay" class="play" title="Start the simulation (P)">▶ Play</button><button id="bReset" hidden title="Start again from zero">↺ Reset</button><button id="bStop" hidden title="Back to editing">■ Stop</button>
+  <div id="simbar" class="simbar"><button id="bPlay" class="play" title="Start the simulation (Ctrl+Enter)">▶ Play</button><button id="bReset" hidden title="Start again from zero">↺ Reset</button><button id="bStop" hidden title="Back to editing">■ Stop</button>
     <span id="simOpts" hidden><label>Speed <select id="simSpeed" aria-label="Simulation speed"><option value="0.1">Slow-mo</option><option value="1" selected>Normal</option><option value="5">Fast</option><option value="25">Very fast</option></select></label> <label><input type="checkbox" id="simV" checked> Volts</label> <span id="simStat" class="stat"></span></span></div>
   <nav class="tools right">
     <button id="bExamples" title="Ready-made lesson circuits">Lessons</button>
@@ -39,15 +40,22 @@
         <button data-act="open">Open .json…</button>
         <button data-act="save">Save .json</button>
         <hr>
-        <button data-act="png">Export PNG</button>
+        <button data-act="png">Export PNG (transparent)</button>
+        <button data-act="pngsheet">Export PNG (whole sheet)</button>
         <button data-act="svg">Export SVG</button>
         <button data-act="copyimg">Copy picture to clipboard</button>
         <button data-act="copysvg">Copy SVG to clipboard</button>
         <button data-act="net">Export netlist (.txt)</button>
+        <hr><button data-act="impkicad">Import from KiCad (.kicad_sch / .kicad_sym)…</button>
+        <button data-act="sch">Export to KiCad (.kicad_sch)</button>
+        <button data-act="kinet">Export KiCad netlist (.net)</button>
+        <button data-act="spice">Export SPICE netlist (.cir)</button>
+        <button data-act="bom">Export parts list (.csv)</button><hr>
         <hr>
         <button data-act="libexp">Export my parts…</button>
         <button data-act="libimp">Import parts…</button>
         <button data-act="example">Lesson circuits…</button>
+        <button data-act="keys">Keyboard shortcuts…</button>
       </div>
     </div>
     <button id="bTheme" title="Light / dark">Theme</button>
@@ -92,6 +100,8 @@
 <script src="sim.js"></script>
 <script src="simui.js"></script>
 <script src="examples.js"></script>
+<script src="projects.js"></script>
+<script src="interop.js"></script>
 <script src="ai.js"></script>
 <script src="boot.js"></script>
 </body>

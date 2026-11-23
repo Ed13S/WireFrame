@@ -114,7 +114,7 @@ ${q}`;
     const labelsFor = new Set(); route(labelsFor); let bad = verify();
     for (let pass = 0; pass < 2 && bad.size; pass++) { nets.forEach(n => { if (n.pins.some(p => bad.has(p.inst.ref + '.' + p.n))) labelsFor.add(n.name); }); route(labelsFor); bad = verify(); }
     if (bad.size) { labelsFor.add('*'); route(labelsFor); bad = verify(); if (bad.size) warn.push('Some nets may not match the description. Run Check and inspect.'); }
-    A.hist = []; A.fut = []; A.commit(); A.emit('load'); return { warnings: warn, notes: spec.notes || '' };
+    A.centerContent(); A.doc.meta.file = A.projects && A.projects.cur ? A.projects.name() + '.wireframe' : A.doc.meta.file; A.hist = []; A.fut = []; A.commit(); A.emit('load'); return { warnings: warn, notes: spec.notes || '' };
   };
 
   /* ---------- transport ---------- */
@@ -156,8 +156,8 @@ ${q}`;
   $('#bAI').onclick = () => A.aiDialog();
 
   /* ---------- lesson circuits ---------- */
-  A.loadExample = async (id) => { const ex = window.EXAMPLES.find(e => e.id === (id || 'flasher')); const res = await A.buildFromSpec(JSON.parse(JSON.stringify(ex.spec)), { replace: true }); A.fit(); return res; };
+  A.loadExample = async (id) => { const ex = window.EXAMPLES.find(e => e.id === (id || 'flasher')); const res = await A.buildFromSpec(JSON.parse(JSON.stringify(ex.spec)), { replace: true }); return res; };
   A.examplesDialog = () => { const host = $('#modalHost');
     host.innerHTML = `<div class="back"><div class="modal"><header><b>Lesson circuits</b><button id="exX" class="small">Close</button></header><div class="mb"><p class="note">Pick one, press Play, and poke at it. Everything on the sheet can be changed.</p><div class="exgrid">${window.EXAMPLES.map(e => `<button class="excard" data-ex="${e.id}"><span class="lv">${esc(e.level)}</span><b>${esc(e.title)}</b><span>${esc(e.desc)}</span></button>`).join('')}</div></div></div></div>`;
-    $('#exX').onclick = () => host.innerHTML = ''; host.querySelectorAll('[data-ex]').forEach(b => b.onclick = async () => { host.innerHTML = ''; try { const r = await A.loadExample(b.dataset.ex); A.runCheck(); $('#msgs').insertAdjacentHTML('afterbegin', r.notes ? `<div class="msg ok">${esc(r.notes)}</div>` : ''); } catch (e) { A.toast('Could not open that circuit'); } }); };
+    $('#exX').onclick = () => host.innerHTML = ''; host.querySelectorAll('[data-ex]').forEach(b => b.onclick = async () => { host.innerHTML = ''; try { const ex = window.EXAMPLES.find(x => x.id === b.dataset.ex); A.projects.newProject(ex.title); const r = await A.loadExample(b.dataset.ex); A.runCheck(); $('#msgs').insertAdjacentHTML('afterbegin', r.notes ? `<div class="msg ok">${esc(r.notes)}</div>` : ''); } catch (e) { A.toast('Could not open that circuit'); } }); };
 })();

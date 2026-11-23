@@ -26,11 +26,17 @@
   A.applyView = applyView;
   function zoomAt(cx, cy, f) { const v = S.view, r = svg.getBoundingClientRect(), mx = cx - r.left, my = cy - r.top, ns = Math.max(1.2, Math.min(40, v.sc * f)), k = ns / v.sc;
     v.tx = mx - (mx - v.tx) * k; v.ty = my - (my - v.ty) * k; v.sc = ns; applyView(); }
-  A.fit = () => { const r = svg.getBoundingClientRect(); let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9; const d = A.doc;
+  A.fitContent = () => { const r = svg.getBoundingClientRect(); let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9; const d = A.doc;
     const add = (x, y) => { x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x); y1 = Math.max(y1, y); };
     d.parts.forEach(i => { const b = A.worldBBox(i); add(b.x0 - 4, b.y0 - 4); add(b.x1 + 4, b.y1 + 4); }); d.wires.forEach(w => { add(w.p[0], w.p[1]); add(w.p[2], w.p[3]); }); d.labels.forEach(l => add(l.x, l.y));
     if (x0 > x1) { x0 = 0; y0 = 0; x1 = A.SHEET.w; y1 = A.SHEET.h; }
     const w = x1 - x0, h = y1 - y0, sc = Math.max(1.2, Math.min(18, Math.min((r.width - 40) / w, (r.height - 70) / h))); S.view = { sc, tx: (r.width - w * sc) / 2 - x0 * sc, ty: (r.height - 40 - h * sc) / 2 - y0 * sc }; applyView(); };
+
+  A.fit = () => { const r = svg.getBoundingClientRect(), W = A.SHEET.w, H = A.SHEET.h, sc = Math.max(1.2, Math.min(18, Math.min((r.width - 30) / W, (r.height - 30) / H))); S.view = { sc, tx: (r.width - W * sc) / 2, ty: (r.height - H * sc) / 2 }; applyView(); };
+  A.centerContent = () => { const d = A.doc; let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9; const add = (x, y) => { x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x); y1 = Math.max(y1, y); };
+    d.parts.forEach(i => { const b = A.worldBBox(i); add(b.x0, b.y0); add(b.x1, b.y1); }); d.wires.forEach(w => { add(w.p[0], w.p[1]); add(w.p[2], w.p[3]); }); d.labels.forEach(l => add(l.x, l.y)); if (x0 > x1) return;
+    const dx = Math.round((A.SHEET.w - (x1 - x0)) / 2 - x0), dy = Math.round((A.SHEET.h - 40 - (y1 - y0)) / 2 - y0); if (!dx && !dy) return;
+    d.parts.forEach(p => { p.x += dx; p.y += dy; }); d.wires.forEach(w => { w.p = [w.p[0] + dx, w.p[1] + dy, w.p[2] + dx, w.p[3] + dy]; }); d.labels.forEach(l => { l.x += dx; l.y += dy; }); d.notes.forEach(l => { l.x += dx; l.y += dy; }); };
 
   /* ---------- rendering ---------- */
   let raf = 0;
@@ -96,6 +102,7 @@
     svg.focus({ preventScroll: true }); svg.setPointerCapture(e.pointerId);
     if (e.button === 1 || e.button === 2 || S.space) { panning = { x: e.clientX, y: e.clientY, tx: S.view.tx, ty: S.view.ty, right: e.button === 2, moved: false }; svg.style.cursor = 'grabbing'; return; }
     if (e.button !== 0) return;
+    if (S.drag && S.drag.sticky) { const dd = S.drag; S.drag = null; if (dd.moved) { fixDiagonals(dd); A.commit(); } A.render(); return; }
     const [gx, gy] = toGrid(e.clientX, e.clientY); const wm = S.tool === 'wire'; const [sx, sy, kind] = snapPt(gx, gy, wm || S.tool === 'label'); S.mouse = { x: sx, y: sy };
     if (S.tool === 'place' && S.placing) { const i = A.placePart(S.placing, sx, sy, S.rot, S.mir); A.commit(); S.sel = new Set([i.id]); renderProps(); A.render(); return; }
     if (S.tool === 'wire') { if (!S.draft) { S.draft = { pts: [[sx, sy]] }; A.render(); return; }
@@ -119,6 +126,8 @@
   svg.addEventListener('pointermove', e => {
     if (panning) { const dx = e.clientX - panning.x, dy = e.clientY - panning.y; if (Math.abs(dx) + Math.abs(dy) > 3) panning.moved = true; S.view.tx = panning.tx + dx; S.view.ty = panning.ty + dy; applyView(); return; }
     const [gx, gy] = toGrid(e.clientX, e.clientY); const [sx, sy] = snapPt(gx, gy, S.tool === 'wire'); S.mouse = { x: sx, y: sy }; $('#stPos').textContent = `${sx}, ${sy}`;
+    if (S.draft) { const dd = S.draft, last = dd.pts[dd.pts.length - 1], ddx = sx - last[0], ddy = sy - last[1];
+      if (!ddx && !ddy) dd.hfirst = undefined; else if (dd.hfirst === undefined) { if (!ddx) dd.hfirst = false; else if (!ddy) dd.hfirst = true; else if (Math.abs(ddx) !== Math.abs(ddy)) dd.hfirst = Math.abs(ddx) > Math.abs(ddy); } }
     const d = S.drag;
     if (d && d.type === 'move') { const nx = snap(gx), ny = snap(gy); if (!d.moved && (Math.abs(gx - d.x0) + Math.abs(gy - d.y0)) < .6) return; if (!d.orig) { startMove(d); } d.moved = true;
       const dx = nx - snap(d.x0), dy = ny - snap(d.y0); d.orig.parts.forEach(([p, x, y]) => { p.x = x + dx; p.y = y + dy; }); d.orig.labels.forEach(([p, x, y]) => { p.x = x + dx; p.y = y + dy; }); d.orig.notes.forEach(([p, x, y]) => { p.x = x + dx; p.y = y + dy; });
@@ -129,7 +138,7 @@
   svg.addEventListener('pointerup', e => {
     if (panning) { const was = panning; panning = null; svg.style.cursor = S.tool === 'select' ? 'default' : 'crosshair'; if (was.right && !was.moved) { if (S.draft) { finishWire(); } else if (S.placing) { S.placing = null; setTool('select'); } } return; }
     if (A.simPointer) A.simPointer(null, 'up');
-    const d = S.drag; S.drag = null; if (!d) return;
+    if (S.drag && S.drag.sticky) return; const d = S.drag; S.drag = null; if (!d) return;
     if (d.type === 'move') { if (d.moved) { fixDiagonals(d); A.commit(); }
       else { const id = d.clickId, it = findItem(id); if (it && it.p && !e.shiftKey) { const n = A.nets().find(n => n.wires.includes(id)); if (n) { S.hl = new Set(n.wires); $('#stNet').textContent = 'Net: ' + n.name + ' (' + n.pins.map(p => p.inst.ref + '.' + p.n).join(', ') + ')'; } } A.render(); } }
     if (d.type === 'rubber') { const x0 = Math.min(d.x0, d.x1), x1 = Math.max(d.x0, d.x1), y0 = Math.min(d.y0, d.y1), y1 = Math.max(d.y0, d.y1);
@@ -143,7 +152,7 @@
       const wasH = o[1] === o[3], e = wasH ? [mv[0], fixed[1]] : [fixed[0], mv[1]]; A.doc.wires = A.doc.wires.filter(x => x !== w);
       [[fixed, e], [e, mv]].forEach(([a, b]) => { if (a[0] !== b[0] || a[1] !== b[1]) A.doc.wires.push({ id: A.id('w'), p: [a[0], a[1], b[0], b[1]] }); }); } }); }
   function finishWire() { S.draft = null; A.render(); }
-  svg.addEventListener('dblclick', e => { if (S.draft) { finishWire(); return; } const id = hitId(e.target), it = id && findItem(id); if (it && it.text !== undefined) { askText('Edit text', it.text, v => { it.text = v; A.commit(); }); } else if (it && it.def) { const i = $('#pRef'); if (i) { i.focus(); i.select(); } } });
+  svg.addEventListener('dblclick', e => { if (S.draft) { finishWire(); return; } if (e.target.closest && e.target.closest('[data-tb]')) { A.sheetDialog && A.sheetDialog(); return; } const id = hitId(e.target), it = id && findItem(id); if (it && it.text !== undefined) { askText('Edit text', it.text, v => { it.text = v; A.commit(); }); } else if (it && it.def) { const i = $('#pRef'); if (i) { i.focus(); i.select(); } } });
   addEventListener('keyup', e => { if (e.code === 'Space') { S.space = false; svg.style.cursor = S.tool === 'select' ? 'default' : 'crosshair'; } });
   addEventListener('keydown', e => {
     const tag = (e.target.tagName || '').toLowerCase(); if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
@@ -153,10 +162,21 @@
     if (mod && k === 'c') { copySel(); return; } if (mod && k === 'x') { copySel(); deleteSel(); return; } if (mod && k === 'v') { e.preventDefault(); paste(); return; }
     if (mod && k === 'd') { e.preventDefault(); copySel(); paste(); return; } if (mod && k === 'a') { e.preventDefault(); A.select([...A.doc.parts, ...A.doc.wires, ...A.doc.labels, ...A.doc.notes].map(x => x.id)); return; }
     if (mod && k === 's') { e.preventDefault(); A.saveFile(); return; } if (mod) return;
-    if (k === 'escape') { if (S.draft) finishWire(); else if (S.placing || S.tool !== 'select') setTool('select'); else A.select([]); return; }
+    if (k === 'escape') { if (S.drag && S.drag.sticky) { const dd = S.drag; S.drag = null; if (dd.orig) { dd.orig.parts.forEach(([p, x, y]) => { p.x = x; p.y = y; }); dd.orig.labels.forEach(([p, x, y]) => { p.x = x; p.y = y; }); dd.orig.notes.forEach(([p, x, y]) => { p.x = x; p.y = y; }); dd.orig.wires.forEach(([w, o]) => { w.p = o; }); dd.orig.att.forEach(([w, kk, o]) => { w.p = o; }); } A.render(); } else if (S.draft) finishWire(); else if (S.placing || S.tool !== 'select') setTool('select'); else A.select([]); return; }
     if (k === 'delete' || k === 'backspace') { e.preventDefault(); deleteSel(); return; }
-    if (k === 'v') setTool('select'); else if (k === 'w') setTool('wire'); else if (k === 'l') setTool('label'); else if (k === 't') setTool('text');
-    else if (k === 'r') rotateSel(1); else if (k === 'm' || k === 'x') mirrorSel(); else if (k === 'f' || k === 'home') A.fit();
+    const sel1 = () => [...S.sel].map(findItem).filter(Boolean)[0], focus = id => { const i = $(id); if (i) { i.focus(); i.select(); } };
+    const startGrab = () => { if (!S.sel.size) return; const d = { type: 'move', x0: S.mouse.x, y0: S.mouse.y, last: [S.mouse.x, S.mouse.y], moved: false, clickId: null, orig: null, sticky: true }; startMove(d); S.drag = d; A.toast('Move: click to drop, Esc to cancel', 1800); };
+    if (e.ctrlKey && k === 'home' || (e.shiftKey && k === 'home')) A.fitContent();
+    else if (k === 'a') { setTool('select'); const q = $('#q'); if (q) { q.focus(); q.select(); } }
+    else if (k === 'p') { const c = $$('#cats [data-cat]').find(b => b.dataset.cat === 'Power'); if (c) c.click(); const q = $('#q'); if (q) { q.value = ''; q.focus(); } }
+    else if (k === 'w') setTool('wire'); else if (k === 'l') setTool('label'); else if (k === 't') setTool('text'); else if (k === 's') setTool('select');
+    else if (k === 'r') rotateSel(1); else if (k === 'x') { rotateSel(2); mirrorSel(); } else if (k === 'y') mirrorSel();
+    else if (k === 'm' || k === 'g') startGrab();
+    else if (k === 'c') { copySel(); paste(); startGrab(); }
+    else if (k === 'e') { const it = sel1(); if (it && it.def) focus('#pRef'); else if (it && it.text !== undefined) askText('Edit text', it.text, v => { it.text = v; A.commit(); }); else if (!it) A.sheetDialog && A.sheetDialog(); }
+    else if (k === 'v') focus('#pVal'); else if (k === 'u') focus('#pRef');
+    else if (k === 'f' || k === 'home') A.fit(); else if (k === '?' || (e.shiftKey && k === '/')) A.shortcutsDialog && A.shortcutsDialog();
+    else if (k === 'n' && S.tool === 'wire') finishWire();
     else if (k === '=' || k === '+') zoomAt(svg.clientWidth / 2 + svg.getBoundingClientRect().left, svg.clientHeight / 2 + svg.getBoundingClientRect().top, 1.25); else if (k === '-') zoomAt(svg.clientWidth / 2 + svg.getBoundingClientRect().left, svg.clientHeight / 2 + svg.getBoundingClientRect().top, .8);
     else if (k.startsWith('arrow') && S.sel.size) { e.preventDefault(); const dx = k === 'arrowleft' ? -1 : k === 'arrowright' ? 1 : 0, dy = k === 'arrowup' ? -1 : k === 'arrowdown' ? 1 : 0;
       A.doc.parts.forEach(p => S.sel.has(p.id) && (p.x += dx, p.y += dy)); A.doc.labels.forEach(p => S.sel.has(p.id) && (p.x += dx, p.y += dy)); A.doc.notes.forEach(p => S.sel.has(p.id) && (p.x += dx, p.y += dy)); A.doc.wires.forEach(w => S.sel.has(w.id) && (w.p = [w.p[0] + dx, w.p[1] + dy, w.p[2] + dx, w.p[3] + dy])); A.commit(); }

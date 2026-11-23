@@ -46,7 +46,7 @@
   A.openText = (text, name) => { try { const o = JSON.parse(text);
       if (Array.isArray(o) || (o.pins && o.draw)) { const arr = Array.isArray(o) ? o : [o]; arr.forEach(p => { if (p.pins && p.draw) A.addCustom(p); }); A.refreshLib(); A.toast('Imported ' + arr.length + ' part(s) into My parts'); return; }
       A.importDoc(o); A.toast('Opened ' + (name || 'sheet')); } catch (e) { A.toast('That file is not a WireFrame sheet'); } };
-  async function toPNG(scale) { const svg = A.exportSVG({ tight: true }); const img = new Image(); const url = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+  async function toPNG(scale, sheet) { const svg = A.exportSVG(sheet ? {} : { tight: true }); const img = new Image(); const url = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
     await new Promise((res, rej) => { img.onload = res; img.onerror = rej; img.src = url; }); const c = document.createElement('canvas'); c.width = img.width * scale / 1; c.height = img.height * scale; const x = c.getContext('2d'); x.scale(scale, scale); x.drawImage(img, 0, 0);
     return new Promise(r => c.toBlob(r, 'image/png')); }
   const acts = {
@@ -55,19 +55,21 @@
     async png() { try { A.download(base() + '.png', await toPNG(2), 'image/png'); } catch (e) { A.toast('PNG export failed in this browser; try SVG'); } },
     async copyimg() { try { const b = await toPNG(2); await navigator.clipboard.write([new ClipboardItem({ 'image/png': b })]); A.toast('Copied picture to clipboard'); } catch (e) { A.toast('Clipboard blocked here; use Export PNG'); } },
     async copysvg() { try { await navigator.clipboard.writeText(A.exportSVG({ tight: true })); A.toast('Copied SVG to clipboard'); } catch (e) { A.toast('Clipboard blocked here; use Export SVG'); } },
+    async pngsheet() { try { A.download(base() + '-sheet.png', await toPNG(2, true), 'image/png'); } catch (e) { A.toast('PNG export failed'); } },
+    keys() { A.shortcutsDialog(); },
     svg() { A.download(base() + '.svg', A.exportSVG({ tight: true }), 'image/svg+xml'); },
     net() { A.download(base() + '-netlist.txt', A.netlistText()); },
     libexp() { if (!A.custom.length) return A.toast('You have no custom parts yet'); A.download('my-parts.json', JSON.stringify(A.custom, null, 1), 'application/json'); },
     libimp() { $('#fileIn').dataset.mode = 'lib'; $('#fileIn').click(); },
     example() { A.examplesDialog && A.examplesDialog(); }
   };
-  $('#fileIn').accept = '.json,.kicad_sym,application/json';
+  $('#fileIn').accept = '.json,.kicad_sym,.kicad_sch,application/json';
   $('#fileIn').onchange = async e => { const f = e.target.files[0]; e.target.value = ''; if (!f) return; const t = await f.text();
-    if (/\.kicad_sym$/i.test(f.name)) { if (A.importKicadSym) A.importKicadSym(t, f.name); else A.toast('KiCad import is not available'); } else A.openText(t, f.name); };
+    if (/\.kicad_sch$/i.test(f.name)) A.importKicadSch(t, f.name); else if (/\.kicad_sym$/i.test(f.name)) { if (A.importKicadSym) A.importKicadSym(t, f.name); else A.toast('KiCad import is not available'); } else A.openText(t, f.name); };
   const menu = $('#fileMenu'); $('#bFile').onclick = e => { e.stopPropagation(); menu.hidden = !menu.hidden; };
   document.addEventListener('click', () => menu.hidden = true);
-  menu.onclick = e => { const b = e.target.closest('[data-act]'); if (b) { menu.hidden = true; acts[b.dataset.act](); } };
-  addEventListener('dragover', e => e.preventDefault()); addEventListener('drop', async e => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (!f) return; const t = await f.text(); /\.kicad_sym$/i.test(f.name) ? A.importKicadSym && A.importKicadSym(t, f.name) : A.openText(t, f.name); });
+  menu.onclick = e => { const b = e.target.closest('[data-act]'); if (b) { menu.hidden = true; (acts[b.dataset.act] || A.interopActs[b.dataset.act])(); } };
+  addEventListener('dragover', e => e.preventDefault()); addEventListener('drop', async e => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (!f) return; const t = await f.text(); /\.kicad_sch$/i.test(f.name) ? A.importKicadSch(t, f.name) : /\.kicad_sym$/i.test(f.name) ? A.importKicadSym && A.importKicadSym(t, f.name) : A.openText(t, f.name); });
 
   /* ---------- theme ---------- */
   const themes = ['dark', 'light', 'auto']; let th = 'dark'; try { th = localStorage.getItem('ss_theme') || 'dark'; } catch (e) {}

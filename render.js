@@ -2,7 +2,7 @@
 (function () {
   const A = window.App, esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const f2 = n => Math.round(n * 100) / 100;
-  A.SHEET = { w: 330, h: 234 };            // A3 at 1 unit = 1.27 mm
+  A.SHEET = { w: 234, h: 165 };            // A4 at 1 unit = 1.27 mm (same as KiCad)
   const fillCls = (s, dflt) => { const f = s.f === undefined ? dflt : s.f; return f === 1 ? 's-solid' : f === 2 ? 's-fill' : 's-none'; };
 
   // text orientation: keep text readable whatever the part rotation/mirror
@@ -55,12 +55,15 @@
     return g;
   };
   A.VERSION = 'WireFrame EDA 1.0.1';
-  A.sheetSVG = () => { const { w, h } = A.SHEET, m = A.doc.meta, bw = 100, bh = 30, tx = w - 3 - bw, ty = h - 3 - bh, L = tx + 2, T = (y, t, sz, cls) => `<text class="tb ${cls || ''}" x="${L}" y="${ty + y}" font-size="${sz}" dominant-baseline="central">${esc(t)}</text>`;
+  A.sheetSVG = () => { const { w, h } = A.SHEET, m = A.doc.meta, bw = 110, rh = 5, n = 7, bh = rh * n, tx = w - 3 - bw, ty = h - 3 - bh, L = tx + 2;
+    const T = (row, t, sz, cls, dx) => `<text class="tb ${cls || ''}" x="${L + (dx || 0)}" y="${ty + rh * row + rh / 2}" font-size="${sz}" dominant-baseline="central">${esc(t)}</text>`;
+    const lines = []; for (let i = 1; i < n; i++) lines.push(`M${tx} ${ty + rh * i}H${w - 3}`);
     return `<g class="sheet"><rect class="paper" x="0" y="0" width="${w}" height="${h}"/><rect class="frame" x="3" y="3" width="${w - 6}" height="${h - 6}"/><rect class="frame" x="${tx}" y="${ty}" width="${bw}" height="${bh}"/>` +
-      `<path class="frame" d="M${tx} ${ty + 6}H${w - 3}M${tx} ${ty + 12}H${w - 3}M${tx} ${ty + 18}H${w - 3}M${tx} ${ty + 24}H${w - 3}M${tx + 60} ${ty + 24}V${h - 3}M${tx + 82} ${ty + 24}V${h - 3}"/>` +
-      T(3, 'By: ' + (m.author || ''), 1.7, 'sm') + T(9, (m.company || 'WireFrame') + (m.project ? ' – ' + m.project : ''), 1.9, 'b') + T(15, 'Sheet: /', 1.5, 'sm') +
-      T(21, 'Title: ' + (m.title || ''), 2.4, 'b i') + T(27, '©' + A.VERSION, 1.5, 'sm') +
-      `<text class="tb sm" x="${tx + 62}" y="${ty + 27}" font-size="1.5" dominant-baseline="central">Date: ${esc(m.date || '')}</text><text class="tb b" x="${tx + 84}" y="${ty + 27}" font-size="1.5" dominant-baseline="central">Rev: ${esc(m.rev || '1')}</text></g>`; };
+      `<path class="frame" d="${lines.join('')}M${tx + 62} ${ty + rh * 5}V${ty + rh * 6}M${tx + 88} ${ty + rh * 5}V${h - 3}"/>` +
+      T(0, m.comment || '', 1.6, 'cm') + T(1, m.author || '', 1.8, '') + T(2, [m.company, m.project].filter(Boolean).join('  ') || 'WireFrame', 1.9, 'b') + T(3, 'Sheet: /   File: ' + (m.file || 'untitled.wireframe'), 1.4, 'sm') +
+      T(4, 'Title: ' + (m.title || ''), 2.4, 'b i') + T(5, 'Size: ' + (m.size || 'A4'), 1.5, 'sm') + T(5, 'Date: ' + (m.date || ''), 1.5, 'sm', 62 - 0) + T(5, 'Rev: ' + (m.rev || '1'), 1.6, 'b', 88) +
+      T(6, '©' + A.VERSION, 1.5, 'sm') + T(6, 'Id: 1/1', 1.4, 'sm', 88) +
+      `<rect data-tb="1" class="tbhit" x="${tx}" y="${ty}" width="${bw}" height="${bh}" fill="transparent" pointer-events="all"><title>Double-click to edit the title block</title></rect></g>`; };
   A.junctions = () => { const d = A.doc, cnt = new Map(); const add = (x, y, n) => { const k = A.key(x, y); const e = cnt.get(k) || { x, y, n: 0 }; e.n += n; cnt.set(k, e); };
     d.wires.forEach(w => { add(w.p[0], w.p[1], 1); add(w.p[2], w.p[3], 1); });
     d.parts.forEach(i => A.pinsOf(i).forEach(p => { if (cnt.has(A.key(p.x, p.y))) add(p.x, p.y, 1); }));
@@ -79,13 +82,13 @@
     return s;
   };
   // standalone SVG string (export / thumbnails); fixed light colours so it prints well
-  A.CSS_EXPORT = `.s-line{stroke:#8a1c1c;fill:none;stroke-width:.15;stroke-linecap:round;stroke-linejoin:round}.s-fill{fill:#fff8c4}.s-solid{fill:#8a1c1c}.s-none{fill:none}.s-txt{fill:#0f6f7a}.s-pin{fill:#0f6f7a}.s-ref{fill:#0f6f7a;font-weight:600}.s-val{fill:#0f6f7a}.s-lbl{fill:#1d4f91;font-weight:600}.s-note{fill:#23262b}.wire{stroke:#0a7a2f;stroke-width:.16;stroke-linecap:round}.junc{fill:#0a7a2f}.lblline{stroke:#1d4f91;stroke-width:.12}.lblpt{fill:#1d4f91}.hit,.hitw{display:none}.paper{fill:#fbfaf5}.frame{fill:none;stroke:#8a1c1c;stroke-width:.2}.tb{fill:#23262b}.tb.b{font-weight:700}.tb.i{font-style:italic}text{font-family:Inter,Arial,sans-serif}`;
+  A.CSS_EXPORT = `.s-line{stroke:#8a1c1c;fill:none;stroke-width:.15;stroke-linecap:round;stroke-linejoin:round}.s-fill{fill:#fff8c4}.s-solid{fill:#8a1c1c}.s-none{fill:none}.s-txt{fill:#0f6f7a}.s-pin{fill:#0f6f7a}.s-ref{fill:#0f6f7a;font-weight:600}.s-val{fill:#0f6f7a}.s-lbl{fill:#1d4f91;font-weight:600}.s-note{fill:#23262b}.wire{stroke:#0a7a2f;stroke-width:.16;stroke-linecap:round}.junc{fill:#0a7a2f}.lblline{stroke:#1d4f91;stroke-width:.12}.lblpt{fill:#1d4f91}.hit,.hitw{display:none}.paper{fill:#fbfaf5}.frame{fill:none;stroke:#8a1c1c;stroke-width:.2}.tb{fill:#23262b}.tbhit{display:none}.tb.cm{fill:#1d4f91}.tb.b{font-weight:700}.tb.i{font-style:italic}text{font-family:Inter,Arial,sans-serif}`;
   A.exportSVG = (opts) => { opts = opts || {}; const d = A.doc; let x0 = 0, y0 = 0, x1 = A.SHEET.w, y1 = A.SHEET.h;
     if (opts.tight) { x0 = y0 = 1e9; x1 = y1 = -1e9; const add = (x, y) => { x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x); y1 = Math.max(y1, y); };
       d.parts.forEach(i => { const b = A.worldBBox(i); add(b.x0 - 2, b.y0 - 3); add(b.x1 + 2, b.y1 + 3); }); d.wires.forEach(w => { add(w.p[0], w.p[1]); add(w.p[2], w.p[3]); }); d.labels.forEach(l => { add(l.x, l.y - 2); add(l.x + l.text.length + 2, l.y); }); d.notes.forEach(n => { add(n.x, n.y - 2); add(n.x + n.text.length * 1.2, n.y + 2); });
       if (x0 > x1) { x0 = 0; y0 = 0; x1 = 40; y1 = 30; } x0 -= 3; y0 -= 3; x1 += 3; y1 += 3; }
     const w = x1 - x0, h = y1 - y0;
-    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${x0} ${y0} ${w} ${h}" width="${Math.round(w * 10)}" height="${Math.round(h * 10)}"><style>${A.CSS_EXPORT}</style>${opts.tight ? `<rect x="${x0}" y="${y0}" width="${w}" height="${h}" fill="#fbfaf5"/>` : ''}${A.worldSVG({ sheet: !opts.tight })}</svg>`; };
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${x0} ${y0} ${w} ${h}" width="${Math.round(w * 10)}" height="${Math.round(h * 10)}"><style>${A.CSS_EXPORT}</style>${opts.bg ? `<rect x="${x0}" y="${y0}" width="${w}" height="${h}" fill="#fbfaf5"/>` : ''}${A.worldSVG({ sheet: !opts.tight })}</svg>`; };
   A.thumb = (def) => { const b = A.bbox(def), pad = 1.5, w = b.x1 - b.x0 + pad * 2, h = b.y1 - b.y0 + pad * 2;
     return `<svg viewBox="${b.x0 - pad} ${b.y0 - pad} ${w} ${h}" preserveAspectRatio="xMidYMid meet" aria-hidden="true">${A.symbolInner(def, null)}</svg>`; };
 })();

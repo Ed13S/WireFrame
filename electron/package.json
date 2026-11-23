@@ -1,4 +1,34 @@
-{"name":"wireframe","productName":"WireFrame","version":"1.0.0","main":"main.js","license":"MIT",
- "scripts":{"prep":"rm -rf app && mkdir app && cp -R ../index.html ../*.js ../*.css ../*.webmanifest ../icon* ../lib app/ && rm -f app/sw.js","start":"npm run prep && electron .","dist":"npm run prep && electron-builder --mac"},
- "build":{"appId":"org.wireframe.app","files":["main.js","preload.js","app/**"],"mac":{"category":"public.app-category.education","target":["dmg"]}},
- "devDependencies":{"electron":"^33.0.0","electron-builder":"^25.0.0"}}
+{
+ "name": "wireframe",
+ "productName": "WireFrame",
+ "version": "1.0.0",
+ "main": "main.js",
+ "license": "MIT",
+ "scripts": {
+  "prep": "rm -rf app && mkdir app && cp -R ../index.html ../*.js ../*.css ../*.webmanifest ../icon* ../lib app/ && rm -f app/sw.js",
+  "start": "npm run prep && electron .",
+  "dist": "npm run prep && electron-builder --mac --publish never"
+ },
+ "build": {
+  "appId": "org.wireframe.app",
+  "files": [
+  "icon.png",
+   "main.js",
+   "preload.js",
+   "app/**"
+  ],
+  "mac": {
+   "category": "public.app-category.education",
+   "target": [
+    "dmg",
+    "zip"
+   ],
+   "identity": null
+  },
+  "icon": "icon.png"
+ },
+ "devDependencies": {
+  "electron": "^33.0.0",
+  "electron-builder": "^25.0.0"
+ }
+}

@@ -90,4 +90,5 @@
     $('#ikQ').oninput = list; $('#ikL').onchange = e => { e.target.checked ? chosen.add(e.target.dataset.n) : chosen.delete(e.target.dataset.n); $('#ikN').textContent = chosen.size + ' selected'; };
     $('#ikX').onclick = () => host().innerHTML = ''; $('#ikOk').onclick = () => { const l = defs.filter(d => chosen.has(d.name)); host().innerHTML = ''; if (l.length) done(l); }; list();
   };
+  A._k = { sexp, all, find, str, q, symToDef };
 })();
