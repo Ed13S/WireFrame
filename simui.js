@@ -68,31 +68,31 @@
     }
     if (st.showV) nets.forEach((n, i) => { const nd = nodeOfNet[i]; if (nd === undefined || (!n.wires.length && n.pins.length < 2)) return; const w = A.doc.wires.find(x => n.wires.includes(x.id)); if (!w) return; const mx = (w.p[0] + w.p[2]) / 2, my = (w.p[1] + w.p[3]) / 2; const vv = v[nd];
       o += `<g><rect x="${mx - 2.1}" y="${my - 2.3}" width="4.2" height="1.5" rx=".4" fill="var(--panel)" opacity=".85"/><text x="${mx}" y="${my - 1.55}" text-anchor="middle" dominant-baseline="central" font-size="1" fill="var(--fg)">${vv.toFixed(Math.abs(vv) < 10 ? 2 : 1)}V</text></g>`; });
-    simg.innerHTML = o;
+    simg.innerHTML = o; if (A.mode === 'build' && A.buildLive) A.buildLive(Sim, st, dt);
     // refresh the selected part's live readout
     if (st.readoutT === undefined || performance.now() - st.readoutT > 250) { st.readoutT = performance.now(); A.simReadout && A.simReadout(); }
   }
   function updateStatus() { $('#simStat').textContent = (st.play ? 'Running' : 'Paused') + ' · ' + Sim.t.toFixed(Sim.t < 10 ? 2 : 1) + ' s'; }
 
   /* ---------- control ---------- */
-  function start() {
+  async function start() {
+    if (A.mode === 'build' && A.doc.master === 'build') { try { await A.schFromBuild(); } catch (e) { console.error(e); A.toast('Could not read the breadboard: ' + e.message); return; } }
     if (!st.active) { st.active = true; $('#simbar').classList.add('on'); }
     const ok = Sim.build(); const box = $('#msgs');
     box.innerHTML = Sim.errors.map(e => `<div class="msg bad">${esc(e)}</div>`).join('') + Sim.warnings.map(w => `<div class="msg">${esc(w)}</div>`).join('') + (Sim.notes || []).map(w => `<div class="msg ok">${esc(w)}</div>`).join('');
     if (!ok) { st.play = false; sync(); A.toast(Sim.errors[0]); return; }
-    powerPoints(); buildFlow(); st.ang = {}; play();
+    powerPoints(); buildFlow(); st.ang = {}; A.mcu && A.mcu.start(); play();
   }
   function play() { if (!st.active) return start(); st.play = true; st.last = performance.now(); sync(); requestAnimationFrame(frame); }
   function pause() { st.play = false; sync(); updateStatus(); }
-  function stop() { st.play = false; st.active = false; simg.innerHTML = ''; $('#simbar').classList.remove('on'); sync(); A.render(); }
+  function stop() { A.mcu && A.mcu.stop(); st.play = false; st.active = false; simg.innerHTML = ''; $('#simbar').classList.remove('on'); sync(); A.render(); }
   function sync() { const b = $('#bPlay'); b.textContent = st.play ? '⏸ Pause' : (st.active ? '▶ Resume' : '▶ Play'); b.classList.toggle('playing', st.play); $('#bStop').hidden = !st.active; $('#bReset').hidden = !st.active; $('#simOpts').hidden = !st.active; }
   A.simStart = start; A.simStop = stop;
   $('#bPlay').onclick = () => st.play ? pause() : (st.active ? play() : start());
   $('#bStop').onclick = stop; $('#bReset').onclick = () => { const was = st.play; start(); if (!was) pause(); };
   $('#simSpeed').onchange = e => st.speed = +e.target.value; $('#simV').onchange = e => { st.showV = e.target.checked; if (!st.play && st.active) draw(0.016); };
-  addEventListener('keydown', e => { const t = (e.target.tagName || '').toLowerCase(); if (t === 'input' || t === 'textarea' || t === 'select' || e.ctrlKey || e.metaKey) return; if (e.key === 'p') { e.preventDefault(); $('#bPlay').click(); } });
   // editing while running restarts the simulation on the new circuit
-  A.on(what => { if (st.active && (what === 'change' || what === 'load')) { const was = st.play; if (what === 'load') { stop(); return; } Sim.build(); powerPoints(); buildFlow(); if (Sim.errors.length) { pause(); } else if (!was) draw(0.016); } });
+  A.on(what => { if (A._syncing) return; if (st.active && (what === 'change' || what === 'load')) { const was = st.play; if (what === 'load') { stop(); return; } Sim.build(); powerPoints(); buildFlow(); if (Sim.errors.length) { pause(); } else if (!was) draw(0.016); } });
   // interaction with parts while running
   A.simPointer = (id, phase) => {
     if (!st.active) return false;

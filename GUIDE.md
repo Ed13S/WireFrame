@@ -19,8 +19,10 @@ Either works. GitHub Pages is simplest. Use Render only if you also want the AI 
 ### Installing like an app
 Open the live link in Chrome/Edge/Safari and use **Install app / Add to Dock / Add to Home Screen**. It then works offline.
 
-### Mac app (optional)
-Install Node.js, then in the `electron` folder run `npm install` and `npm start`. `npm run dist` builds a `.dmg`.
+### Mac app (three ways, easiest first)
+1. **Install from the browser (no build, recommended).** Open your live link in **Chrome or Edge** and click the install icon in the address bar (Safari 17+: File → Add to Dock). It gets its own window and works offline.
+2. **Download a ready-made `.dmg` from GitHub.** In your repo open **Actions → Build Mac app → Run workflow**. When it finishes, download the `WireFrame-mac` artifact at the bottom of the run, unzip, open the `.dmg` and drag WireFrame to Applications. The app is unsigned, so the first time **right-click → Open → Open** (or System Settings → Privacy & Security → Open Anyway).
+3. **Run it yourself.** Install Node.js, then in the `electron` folder run `npm install` then `npm start`. `npm run dist` builds the `.dmg`. To give the app AI without pasting a key, start it with `OPENROUTER_API_KEY=your-key npm start`.
 
 ## 2. AI without pasting a key
 - **Default (nothing to set up):** click **AI Assistant**, describe a part or circuit, copy the prompt it makes into any AI chat (Claude, ChatGPT…), paste the reply back. WireFrame builds, wires and checks it.
@@ -47,8 +49,24 @@ Install Node.js, then in the `electron` folder run `npm install` and `npm start`
 
 **Theme button (top right):** cycles dark (black and acid green), light (KiCad-style with light-blue symbols) and auto. The sheet is cream in dark mode.
 
+**Keyboard shortcuts (KiCad style):** `A` add part, `W` wire, `L` label, `P` power symbol, `T` note, `R` rotate, `X`/`Y` mirror, `M` move, `G` drag, `C` copy, `Del` delete, `Esc` cancel, Ctrl/Cmd+Z undo, Ctrl/Cmd+C/V/D copy, paste, duplicate. File menu → **Keyboard shortcuts** shows the full list.
+
+**Projects:** the folder button next to the logo keeps several circuits (new, open, rename, duplicate, delete). They are stored in your browser, so also use File → Save `.json` as a backup.
+
+**Title block:** double-click the block at the bottom right of the sheet to edit title, company, date, revision and sheet. Exports carry it.
+
+**Build view (breadboard):** click **Build** at the top. Parts sit on a breadboard like Tinkercad. Pick a part on the left, click to place, drag from any hole to run a jumper wire, `R` rotates. Schematic and Build stay in step: edit either and the other updates. **Play** runs the simulation here too (LED glow, motors, meters). Arduino and ESP32 boards show their real pins and indicator LEDs (L, TX, RX, ON).
+
+**Code and Serial (microcontrollers):** put an Arduino or ESP32 part on the sheet, open **Code & Serial** at the bottom, write a sketch (`pinMode`, `digitalWrite`, `digitalRead`, `analogWrite`, `analogRead`, `delay`, `tone`, `Serial.println`) and press Play. Output appears in the Serial Monitor. Not supported: Servo, Wire/I2C, WiFi and other libraries.
+
+**3D export:** in Build view use File → Export 3D model as **GLB** (metres, for viewers and Blender), **OBJ** or **STL** (millimetres, import straight into Fusion 360, Tinkercad or a slicer).
+
+**KiCad and other tools:** File → Import KiCad (`.kicad_sch`, `.kicad_sym`), Export KiCad schematic, netlist, SPICE and BOM. Note: the exports follow KiCad 8's format but have not been checked in every KiCad version, so open them once before relying on them.
+
+**Copy to Word/Docs:** Copy picture and PNG/SVG exports have a transparent background so they take on the page colour.
+
 ## 4. Tips for class
 Set a lesson, have students open a Lesson, predict the voltage, then press Play to check. Delete the LED resistor to see burnout. Students can save their `.json` and hand it in.
 
-## 5. Not built yet
-Breadboard "Build" view with two-way sync, and a simplified kids' mode.
+## 5. Known limits
+Negative supply rails (e.g. -12 V) in Build view, dragging jumper end points, and wire-current animation in Build view are untested. No Servo/I2C/WiFi sketch libraries. A simplified kids' mode is not built yet.

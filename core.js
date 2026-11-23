@@ -111,14 +111,14 @@ const App = window.App = {
   };
 
   /* ---------- undo / persistence ---------- */
-  const snap = () => JSON.stringify({ parts: A.doc.parts, wires: A.doc.wires, labels: A.doc.labels, notes: A.doc.notes, meta: A.doc.meta, seq: A.doc.seq });
+  const snap = () => JSON.stringify({ parts: A.doc.parts, wires: A.doc.wires, labels: A.doc.labels, notes: A.doc.notes, meta: A.doc.meta, seq: A.doc.seq, bw: A.doc.bw || [], bsup: A.doc.bsup || [], bn: A.doc.bn || 30, master: A.doc.master || 'sch', code: A.doc.code });
   A.commit = () => { A.hist.push(snap()); if (A.hist.length > 120) A.hist.shift(); A.fut = []; A.autosave(); A.emit('change'); };
   A.restore = (s) => { const o = JSON.parse(s); Object.assign(A.doc, o); A.emit('change'); A.autosave(); };
   A.undo = () => { if (A.hist.length < 2) return; A.fut.push(A.hist.pop()); A.restore(A.hist[A.hist.length - 1]); };
   A.redo = () => { if (!A.fut.length) return; const s = A.fut.pop(); A.hist.push(s); A.restore(s); };
   A.exportDoc = () => { const o = JSON.parse(snap()); o.defs = {}; o.format = 'wireframe/1';
     A.doc.parts.forEach(p => { const d = A.def(p.def); if (d && !d.builtin) { const c = Object.assign({}, d); delete c.of; o.defs[p.def] = c; } }); return o; };
-  A.importDoc = (o) => { const d = A.newDoc(); Object.assign(d, { parts: o.parts || [], wires: o.wires || [], labels: o.labels || [], notes: o.notes || [], meta: o.meta || d.meta, seq: o.seq || 1000, defs: o.defs || {} });
+  A.importDoc = (o) => { const d = A.newDoc(); Object.assign(d, { parts: o.parts || [], wires: o.wires || [], labels: o.labels || [], notes: o.notes || [], meta: o.meta || d.meta, seq: o.seq || 1000, defs: o.defs || {}, bw: o.bw || [], bsup: o.bsup || [], bn: o.bn || 30, master: o.master || 'sch', code: o.code });
     Object.keys(d.defs).forEach(id => { if (!A.LIB[id]) { A.LIB[id] = d.defs[id]; } });
     A.doc = d; A.hist = []; A.fut = []; A.hist.push(snap()); A.emit('load'); };
   A.autosave = () => { clearTimeout(A._as); A._as = setTimeout(() => { try { localStorage.setItem('ss_doc', JSON.stringify(A.exportDoc())); } catch (e) {} }, 400); };

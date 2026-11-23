@@ -162,6 +162,7 @@
     if (mod && k === 'c') { copySel(); return; } if (mod && k === 'x') { copySel(); deleteSel(); return; } if (mod && k === 'v') { e.preventDefault(); paste(); return; }
     if (mod && k === 'd') { e.preventDefault(); copySel(); paste(); return; } if (mod && k === 'a') { e.preventDefault(); A.select([...A.doc.parts, ...A.doc.wires, ...A.doc.labels, ...A.doc.notes].map(x => x.id)); return; }
     if (mod && k === 's') { e.preventDefault(); A.saveFile(); return; } if (mod) return;
+    if (A.buildKey && A.buildKey(e, k)) return;
     if (k === 'escape') { if (S.drag && S.drag.sticky) { const dd = S.drag; S.drag = null; if (dd.orig) { dd.orig.parts.forEach(([p, x, y]) => { p.x = x; p.y = y; }); dd.orig.labels.forEach(([p, x, y]) => { p.x = x; p.y = y; }); dd.orig.notes.forEach(([p, x, y]) => { p.x = x; p.y = y; }); dd.orig.wires.forEach(([w, o]) => { w.p = o; }); dd.orig.att.forEach(([w, kk, o]) => { w.p = o; }); } A.render(); } else if (S.draft) finishWire(); else if (S.placing || S.tool !== 'select') setTool('select'); else A.select([]); return; }
     if (k === 'delete' || k === 'backspace') { e.preventDefault(); deleteSel(); return; }
     const sel1 = () => [...S.sel].map(findItem).filter(Boolean)[0], focus = id => { const i = $(id); if (i) { i.focus(); i.select(); } };

@@ -1,6 +1,6 @@
 # WireFrame
 
-A simple, kid-friendly circuit schematic editor with a live simulator, a huge parts library (built-in parts plus the KiCad symbol libraries), a part creator, and AI that can make parts and whole circuits. Free and open source. Runs in any browser; no install, no build step, no API key in the page.
+A KiCad-style schematic editor plus a Tinkercad-style breadboard Build view (two-way sync), with a live simulator, Arduino/ESP32 sketches with Serial Monitor, 3D export (GLB/OBJ/STL), KiCad import/export, a huge parts library (built-in parts plus the KiCad symbol libraries), a part creator, and AI that can make parts and whole circuits. Free and open source. Runs in any browser; no install, no build step, no API key in the page.
 
 See GUIDE.md for the full guide.
 
@@ -18,6 +18,7 @@ Three ways, pick one:
 3. **Mac app:** `OPENROUTER_API_KEY` in your environment enables one-click AI.
 
 ## Mac app
+Easiest: install from the browser (Chrome/Edge install icon), or run the **Build Mac app** workflow under the repo's Actions tab and download the `.dmg` (unsigned: right-click → Open). Or:
 ```
 cd electron && npm install && npm start     # run it
 npm run dist                                 # build a .dmg in electron/dist

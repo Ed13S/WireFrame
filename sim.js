@@ -7,6 +7,7 @@
   function num(s, dflt) { if (s === undefined || s === null) return dflt; s = String(s).trim(); const m = /^([+-]?\d*\.?\d+)\s*(meg|Meg|MEG|[pnuµmkKMGR])?(\d*)/.exec(s); if (!m) return dflt; let v = parseFloat(m[1]); const u = m[2];
     if (u && m[3]) v = parseFloat(m[1] + '.' + m[3]); if (u && MULT[u] !== undefined) v *= MULT[u]; return isFinite(v) ? v : dflt; }
   A.parseValue = num;
+  A.railVolts = (nm) => { nm = String(nm || '').trim(); if (/^(VCC|VDD|VBUS|VIN)$/i.test(nm)) return 5; if (/^VEE$/i.test(nm)) return -5; if (/^VBAT$/i.test(nm)) return 3.7; const m = /^([+-]?)(\d+)(?:[.V](\d+))?V?$/i.exec(nm.replace(/^\+/, '+')); if (!m) return null; const v = parseFloat(m[2] + (m[3] ? '.' + m[3] : '')); return isFinite(v) ? (m[1] === '-' ? -v : v) : null; };
 
   /* ---- which library parts can be simulated, and how ---- */
   const byName = (inst, names) => { const pins = A.pinsOf(inst); return names.map(n => { const p = pins.find(q => (q.name || '').toUpperCase() === n) || pins.find(q => q.n === n); return p ? p.n : null; }); };
@@ -36,7 +37,11 @@
     [/^Transistor_FET:.*$/, { t: 'MOS', byName: ['D', 'G', 'S'], auto: true }], [/^Transistor_BJT:.*$/, { t: 'BJT', byName: ['C', 'B', 'E'], auto: true }],
     [/^Switch:SW_(Push|SPST).*$/, { t: 'SW', pins: ['1', '2'] }], [/^Motor:Motor_DC$/, { t: 'MOTOR', pins: ['1', '2'] }], [/^Device:(Buzzer|Speaker)$/, { t: 'BUZZ', pins: ['1', '2'] }], [/^Device:Lamp$/, { t: 'LAMP', pins: ['1', '2'] }],
     [/^Device:R_Potentiometer.*$/, { t: 'POT', pins: ['1', '2', '3'] }], [/^Device:Fuse.*$/, { t: 'FUSE', pins: ['1', '2'] }]];
-  A.simModel = (inst) => { const d = A.def(inst.def); if (!d) return null; let m = M[inst.def] || (d.of && M[d.of]);
+  /* Parts made by the AI or by hand can say how they behave: sim: { as: "NE555", pins: ["<this part's pin for model pin 1>", ...] } (pin number or name). */
+  A.simTable = () => Object.keys(M).filter(k => !M[k].gates && A.LIB[k]).map(k => { const d = A.LIB[k]; return k + ' = ' + M[k].t + ' [' + M[k].pins.map(n => { const p = d.pins.find(q => q.n === n); return p ? (p.name || n) : n; }).join(', ') + ']'; }).join('\n');
+  function custom(inst, d) { const sm = d.sim; if (!sm || !M[sm.as] || M[sm.as].gates) return null; const base = M[sm.as], pins = (sm.pins || []).slice(0, base.pins.length).map(x => { const p = d.pins.find(q => String(q.n) === String(x)) || d.pins.find(q => (q.name || '').toUpperCase() === String(x).toUpperCase()); return p ? p.n : null; });
+    if (pins.length < base.pins.length || pins.some(x => !x)) return null; return Object.assign({}, base, { pins }); }
+  A.simModel = (inst) => { const d = A.def(inst.def); if (!d) return null; if (A.isMCU && A.isMCU(inst)) return { t: 'MCU', pins: d.pins.map(p => p.n) }; const cm = d.sim && custom(inst, d); if (cm) return cm; let m = M[inst.def] || (d.of && M[d.of]);
     if (!m) { const hit = KI.find(([re]) => re.test(inst.def)); if (hit) { m = Object.assign({}, hit[1]); if (m.byName) { const nm = byName(inst, m.byName); if (nm.every(Boolean)) m.pins = nm; else m = null; }
         if (m && m.auto) { const isP = /PNP|PMOS|P-Channel|Q_P/i.test(inst.def + ' ' + (d.desc || '')); m.s = isP ? -1 : 1; } } }
     return m || null; };
@@ -49,6 +54,7 @@
     const nets = A.nets(), pinNode = {}, E = Sim.els = [], err = Sim.errors = [], warn = Sim.warnings = [];
     let gnd = nets.findIndex(n => isGndName(n.name) && (n.powerPins.length || n.labels.length));
     if (gnd < 0) { const src = A.doc.parts.find(p => { const m = A.simModel(p); return m && m.t === 'V'; }); if (src) { const pin = A.pinsOf(src).find(q => q.n === A.simModel(src).pins[1]); gnd = nets.findIndex(n => n.pins.includes(pin) || n.pins.some(q => q.inst === src && q.n === pin.n)); if (gnd >= 0) warn.push('No ground symbol found, so the negative side of ' + src.ref + ' is used as 0 V. Add a GND symbol to be sure.'); } }
+    if (gnd < 0) { const mcu = A.doc.parts.find(p => { const m = A.simModel(p); return m && m.t === 'MCU'; }); if (mcu) { const gp = A.pinsOf(mcu).find(q => /^GND$/i.test(q.name || '')); if (gp) { gnd = nets.findIndex(n => n.pins.some(q => q.inst === mcu && q.n === gp.n)); if (gnd >= 0) warn.push('The board\'s GND pin is 0 volts. The board is powered over USB (5 V and 3.3 V pins are live).'); } } }
     if (gnd < 0) { err.push('Add a ground (GND) symbol so the simulator knows where 0 volts is.'); }
     let k = 1; const nodeOf = new Map(); nets.forEach((n, i) => nodeOf.set(i, i === gnd ? 0 : k++)); Sim.nodes = k;
     nets.forEach((n, i) => n.pins.concat(n.powerPins).forEach(p => pinNode[p.inst.id + ':' + p.n] = nodeOf.get(i)));
@@ -82,13 +88,14 @@
         case 'MOS': el.s = m.s; { const big = /IRF|IRL|FQ|STP|BUZ/i.test(inst.value || ''); el.vth = big ? 3 : 2; el.kp = big ? 5 : 0.15; } el.vl = 0; break;
         case 'OA': { const pu = (j) => alone(inst, m.pins[j]); el.floatRails = pu(3) && pu(4); if (el.floatRails) warn.push(inst.ref + ' has no power pins connected, so it runs on +/-12 V.'); el.gain = 1000; break; }
         case 'GATE': el.f = m.f; el.out = 0; break;
+        case 'MCU': el.mcu = A.mcuFor(inst); break;
         case 'QUAD': el.vn = nd(m.vcc); el.gn = nd(m.gnd); el.gg = m.gates.map(g => g.map(pn => nd(String(pn)))); el.gk = m.gates.map(g => g.map(pn => inst.id + ':' + pn)); el.outv = m.gates.map(() => false); el.n = []; el.keys = []; break;
         case '555': el.q = false; el.out = 0; break;
         case 'REG': { const nm = (inst.value || '') + ' ' + d.name; const mm = /(78|79)(\d\d)|(\d)[.V](\d)/.exec(nm); el.vset = /3\.3|33/.test(nm) ? 3.3 : /7812|12/.test(nm) ? 12 : /7809|9V/.test(nm) ? 9 : /7806|6V/.test(nm) ? 6 : 5; el.drop = 1.5; el.vo = 0; break; }
       }
       E.push(el); });
     // power symbols named like a voltage act as an ideal supply unless a real source already drives that net
-    const rail = (nm) => { nm = String(nm || '').trim(); if (/^(VCC|VDD|VBUS|VIN)$/i.test(nm)) return 5; if (/^VEE$/i.test(nm)) return -5; if (/^VBAT$/i.test(nm)) return 3.7; const m = /^([+-]?)(\d+)(?:[.V](\d+))?V?$/i.exec(nm.replace(/^\+/, '+')); if (!m) return null; const v = parseFloat(m[2] + (m[3] ? '.' + m[3] : '')); return isFinite(v) ? (m[1] === '-' ? -v : v) : null; };
+    const rail = A.railVolts;
     const railNotes = []; nets.forEach((net, i) => { const nd = nodeOf.get(i); if (nd === 0 || !net.powerPins.length) return; const vv = rail(net.name); if (vv === null) return; if (E.some(e => (e.t === 'V' || e.t === 'VAC') && e.n.includes(nd))) return;
       const pp = net.powerPins[0]; E.push({ inst: pp.inst, m: { t: 'V' }, t: 'V', n: [nd, 0], keys: [pp.inst.id + ':1', pp.inst.id + ':gnd'], st: {}, vs: vv, rint: 0.05, rail: true }); railNotes.push(net.name + ' = ' + vv + ' V'); });
     if (railNotes.length) Sim.notes = ['Power symbols supply voltage: ' + railNotes.join(', ') + '.']; else Sim.notes = [];
@@ -145,6 +152,7 @@
         case 'OA': { const [ni, np, no, nvp, nvn] = e.n; const hi = e.floatRails ? 12 : v[nvp] - 0.8, lo = e.floatRails ? -12 : v[nvn] + 0.1 + (e.inst.def === 'COMP' ? 0 : 0); const mid = (hi + lo) / 2, half = Math.max(0.05, (hi - lo) / 2);
           const vd = v[np] - v[ni], th = Math.tanh(e.gain * vd / half), vt = mid + half * th, dvt = e.gain * (1 - th * th); const rout = 75, g = 1 / rout;
           nl([no, np, ni], [g * (v[no] - vt), -g * (v[no] - vt) * 0, 0], [[g, -g * dvt, g * dvt], [0, 0, 0], [0, 0, 0]], [v[no], v[np], v[ni]]); break; }
+        case 'MCU': { const mc = e.mcu; if (!mc) break; mc.pins.forEach(pp => { const nd_ = e.n[pp.idx]; pp.r = 0; if (!nd_) return; if (pp.role === 'v5') { pp.vt = 5; pp.r = 0.5; } else if (pp.role === 'v33') { pp.vt = 3.3; pp.r = 1; } else if (pp.role === 'gpio') { if (pp.mode === 1) { pp.vt = mc.level(pp); pp.r = 25; } else if (pp.mode === 2) { pp.vt = mc.vhigh; pp.r = 40000; } else { G(nd_, 0, 1e-9); return; } } else return; src(nd_, 0, pp.vt, pp.r); }); break; }
         case 'GATE': { const pv = Sim.vprev; const hi = 5, th = 2.5, ina = pv[e.n[0]] > th, inb = e.n.length > 2 ? pv[e.n[1]] > th : false; let o; switch (e.f) { case 'and': o = ina && inb; break; case 'nand': o = !(ina && inb); break; case 'or': o = ina || inb; break; case 'nor': o = !(ina || inb); break; case 'xor': o = ina !== inb; break; case 'xnor': o = ina === inb; break; case 'not': o = !ina; break; default: o = ina; }
           e.n.slice(0, -1).forEach(ni => G(ni, 0, 1e-8)); src(e.n[e.n.length - 1], 0, o ? hi : 0, 60); e.outv = o; break; }
         case 'QUAD': { const pv = Sim.vprev, hi = Math.max(0, pv[e.vn] - pv[e.gn]), th = hi / 2;
@@ -182,6 +190,7 @@
         case 'MOS': { const [nd_, ng, ns] = e.n, s = e.s; let dn = nd_, sn = ns; if (s * (v[dn] - v[sn]) < 0) { dn = ns; sn = nd_; } const vgs = s * (v[ng] - v[sn]), vds = s * (v[dn] - v[sn]), vov = vgs - e.vth; let id = 0; if (vov > 0) id = vds < vov ? e.kp * (vov * vds - vds * vds / 2) * (1 + 0.02 * vds) : e.kp / 2 * vov * vov * (1 + 0.02 * vds); const sgn = dn === nd_ ? 1 : -1; add(e.keys[0], sgn * s * id); add(e.keys[2], -sgn * s * id); info[e.inst.id] = { id: sgn * s * id }; break; }
         case 'OA': { const no = e.n[2], hi = e.floatRails ? 12 : v[e.n[3]] - 0.8, lo = e.floatRails ? -12 : v[e.n[4]] + 0.1, mid = (hi + lo) / 2, half = Math.max(0.05, (hi - lo) / 2), vt = mid + half * Math.tanh(e.gain * (v[e.n[1]] - v[e.n[0]]) / half); i = (v[no] - vt) / 75; add(e.keys[2], i); break; }
         case 'QUAD': { const hi = Math.max(0, v[e.vn] - v[e.gn]); e.gg.forEach((gt, k) => { const no = gt[gt.length - 1], ii = (v[no] - v[e.gn] - (e.outv[k] && hi > 1 ? hi : 0)) / 60; add(e.gk[k][gt.length - 1], ii); add(e.keys[0] || e.gk[0][0], 0); }); break; }
+        case 'MCU': { const mc = e.mcu; if (mc) mc.pins.forEach(pp => { if (pp.r) add(e.keys[pp.idx], (v[e.n[pp.idx]] - pp.vt) / pp.r); }); break; }
         case 'GATE': { const no = e.n[e.n.length - 1]; i = (v[no] - (e.outv ? 5 : 0)) / 60; add(e.keys[e.keys.length - 1], i); break; }
         case '555': { const nout = e.n[2], vcc = v[e.n[7]] - v[e.n[0]]; i = (v[nout] - v[e.n[0]] - (e.q && vcc > 3 ? vcc - 1.5 : (vcc > 3 ? .1 : 0))) / 20; add(e.keys[2], i); add(e.keys[0], -i); const ic = (v[e.n[7]] - v[e.n[4]]) / 5000; add(e.keys[7], ic); add(e.keys[4], -ic + (v[e.n[4]] - v[e.n[0]]) / 10000); add(e.keys[0], -(v[e.n[4]] - v[e.n[0]]) / 10000); if (!e.q) { const di = (v[e.n[6]] - v[e.n[0]]) / 10; add(e.keys[6], di); add(e.keys[0], -di); } break; }
         case 'REG': { const nout = e.n[2], vi = v[e.n[0]] - v[e.n[1]]; const tgt = Math.max(0, Math.min(e.vset, vi - e.drop)); i = (v[nout] - v[e.n[1]] - tgt) / 0.2; e.iout = -i; add(e.keys[2], i); add(e.keys[0], -e.iout + 0.005); add(e.keys[1], -0.005 + e.iout); break; }

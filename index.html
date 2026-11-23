@@ -14,6 +14,7 @@
 <header id="top">
   <div class="brand"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M2 12h5l2-5 4 10 2-5h7" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/></svg><b>WireFrame</b></div>
   <button id="bProj" class="projbtn" title="Your projects">📁 Projects ▾</button>
+  <div class="seg" role="group" aria-label="View"><button data-mode="sch" class="on" title="Schematic view">Schematic</button><button data-mode="build" title="Breadboard view">Build</button></div>
   <nav class="tools" aria-label="Tools">
     <button data-tool="select" class="tool on" title="Select (S)">Select</button>
     <button data-tool="wire" class="tool" title="Draw wire (W)">Wire</button>
@@ -49,6 +50,9 @@
         <hr><button data-act="impkicad">Import from KiCad (.kicad_sch / .kicad_sym)…</button>
         <button data-act="sch">Export to KiCad (.kicad_sch)</button>
         <button data-act="kinet">Export KiCad netlist (.net)</button>
+        <button data-act="glb">Export 3D model (.glb)</button>
+        <button data-act="obj">Export 3D model (.obj + .mtl)</button>
+        <button data-act="stl">Export 3D model (.stl)</button>
         <button data-act="spice">Export SPICE netlist (.cir)</button>
         <button data-act="bom">Export parts list (.csv)</button><hr>
         <hr>
@@ -99,9 +103,14 @@
 <script src="partedit.js"></script>
 <script src="sim.js"></script>
 <script src="simui.js"></script>
+<script src="mcu.js"></script>
 <script src="examples.js"></script>
 <script src="projects.js"></script>
 <script src="interop.js"></script>
+<script src="build.js"></script>
+<script src="buildview.js"></script>
+<script src="buildsync.js"></script>
+<script src="build3d.js"></script>
 <script src="ai.js"></script>
 <script src="boot.js"></script>
 </body>

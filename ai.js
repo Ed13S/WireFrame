@@ -17,7 +17,8 @@
   const SPEC_DOC = `{
   "title": "short title",
   "newParts": [   // only for parts NOT in the catalog. "sides" lists pins as "number:name" top to bottom (left/right) or left to right (top/bottom)
-    { "id": "LM3914", "name": "LM3914 LED bar driver", "ref": "U", "value": "LM3914", "sides": { "l": ["5:SIG","4:RLO"], "r": ["1:LED1","18:LED2"], "t": ["3:V+"], "b": ["2:V-"] } }
+    { "id": "LM3914", "name": "LM3914 LED bar driver", "ref": "U", "value": "LM3914", "sides": { "l": ["5:SIG","4:RLO"], "r": ["1:LED1","18:LED2"], "t": ["3:V+"], "b": ["2:V-"] },
+      "sim": { "as": "OPAMP", "pins": ["name or number of the part's pin for each model pin"] } }   // sim: pick the closest built-in model so the part works in the simulator; see the model list below
   ],
   "parts": [      // every component. "part" is a catalog id or a newParts id. col/row (whole numbers) give a rough left-to-right, top-to-bottom layout. rot = 0..3 (quarter turns clockwise)
     { "ref": "R1", "part": "R", "value": "330", "col": 1, "row": 0, "rot": 0 }
@@ -34,6 +35,8 @@ JSON format (comments shown with // are for you, do not include them):
 ${SPEC_DOC}
 
 Rules:
+- Every newParts entry should carry a "sim" field choosing the closest built-in simulator model (so the circuit can be simulated). Models and their pin order:
+${A.simTable()}
 - Use catalog parts whenever one fits. Use ONLY the pin numbers listed in the catalog for those parts. If you need a part that is not in the catalog, define it in newParts with its real datasheet pin numbers and names.
 - Every part reference must be unique (R1, R2, C1, U1, Q1, D1, SW1, BT1...). Use realistic standard values (E12 resistors, common capacitor values) and sensible ratings in the value text.
 - Every pin that matters must appear in a net. Include supply decoupling, pull-ups/pull-downs, base/gate resistors and current-limit resistors where a real build needs them. Use power symbols via net names (GND, +5V, +9V, VCC, +3V3, -12V) instead of drawing a battery, unless the question is about the battery.
@@ -48,8 +51,12 @@ Circuit to design:
 ${desc}`;
   A.partPrompt = (desc) => `You are a parts-library assistant inside a schematic editor. Create the schematic symbol for the part described below and reply with ONE JSON object only (no markdown fences, no other text):
 { "name": "LM358 dual op-amp (DIP-8)", "ref": "U", "value": "LM358", "desc": "one line description",
-  "sides": { "l": ["2:1IN-","3:1IN+","6:2IN-","5:2IN+"], "r": ["1:1OUT","7:2OUT"], "t": ["8:V+"], "b": ["4:V-"] } }
+  "sides": { "l": ["2:1IN-","3:1IN+","6:2IN-","5:2IN+"], "r": ["1:1OUT","7:2OUT"], "t": ["8:V+"], "b": ["4:V-"] },
+  "sim": { "as": "OPAMP", "pins": ["2","3","1","8","4"] } }
 Pins are written "number:name". Left and right pins are listed top to bottom, top and bottom pins left to right. Use the real datasheet pin numbers and names for the exact package named. Put inputs on the left, outputs on the right, power on top, ground on the bottom. Include every pin of the package (use "NC" as the name for no-connect pins).
+
+SIMULATION: the "sim" field makes the part work in the simulator. Pick the built-in model that behaves most like the part (leave "sim" out only if none fits). "pins" lists, in the model's pin order, which of THIS part's pins (number or name) plays each role. If the part contains several identical blocks (e.g. a dual op-amp) model the first block. Models and their pin order:
+${A.simTable()}
 
 Part:
 ${desc}`;
@@ -71,7 +78,7 @@ ${q}`;
     opts = opts || {}; const warn = [];
     (spec.newParts || []).forEach(np => { try { if (!np.id) np.id = 'AI:' + np.name; if (A.LIB[np.id] && A.LIB[np.id].builtin) return;
       let d; if (np.sides) d = window.buildBox(np.id, np.name || np.id, 'My parts', np.ref || 'U', np.value || np.name, np.sides); else if (np.pins && np.draw) d = { id: np.id, name: np.name, ref: np.ref || 'U', value: np.value || np.name, pins: np.pins, draw: np.draw }; else return;
-      d.desc = np.desc || ''; A.addCustom(d); } catch (e) { warn.push('Could not make part ' + np.id); } });
+      d.desc = np.desc || ''; if (np.sim && np.sim.as) d.sim = np.sim; A.addCustom(d); } catch (e) { warn.push('Could not make part ' + np.id); } });
     const specParts = (spec.parts || []).filter(p => p && p.ref && p.part); if (!specParts.length) throw new Error('The reply had no parts.');
     if (opts.replace !== false) { A.doc = A.newDoc(); }
     const defs = {}; for (const sp of specParts) { let id = sp.part, d = A.def(id) || await A.ensureDef(id);
@@ -145,7 +152,7 @@ ${q}`;
       if (kind === 'ask') { out.innerHTML = '<div style="white-space:pre-wrap;color:var(--fg)">' + esc(reply) + '</div>'; return; }
       const spec = parseJSON(reply); if (!spec) { out.textContent = 'I could not read that reply as JSON. Ask Claude to “reply with the JSON object only”.'; return; }
       try { if (kind === 'part') { const d = spec.sides ? window.buildBox('My:' + spec.name.replace(/\s+/g, '_'), spec.name, 'My parts', spec.ref || 'U', spec.value || spec.name, spec.sides) : null;
-          if (!d) { out.textContent = 'The reply did not contain pins for a part.'; return; } d.desc = spec.desc || ''; A.addCustom(d); A.L.cat = 'My parts'; A.refreshLib(); host.innerHTML = ''; A.toast('Added “' + d.name + '” to My parts. Click it to place it.'); return; }
+          if (!d) { out.textContent = 'The reply did not contain pins for a part.'; return; } d.desc = spec.desc || ''; if (spec.sim && spec.sim.as) d.sim = spec.sim; A.addCustom(d); A.L.cat = 'My parts'; A.refreshLib(); host.innerHTML = ''; A.toast('Added “' + d.name + '” to My parts. Click it to place it.'); return; }
         const res = await A.buildFromSpec(spec, { replace: true }); host.innerHTML = ''; A.fit(); A.runCheck(); const m = $('#msgs'); m.insertAdjacentHTML('afterbegin', (res.notes ? `<div class="msg ok">${esc(res.notes)}</div>` : '') + res.warnings.map(w => `<div class="msg bad">${esc(w)}</div>`).join('')); A.toast('Circuit built. Tweak it like any other sheet.'); }
       catch (e) { out.textContent = 'Could not build that: ' + e.message; } };
     if (mode === 'paste') { $('#aiCopy').onclick = async () => { const p = promptNow(); if (!p) return; try { await navigator.clipboard.writeText(p); $('#aiOut').textContent = 'Request copied (' + Math.round(p.length / 1000) + ' KB). Paste it into Claude.'; } catch (e) { const ta = $('#aiReply'); ta.value = p; ta.select(); $('#aiOut').textContent = 'Copy was blocked, so the request is in the box below. Copy it from there.'; } };
