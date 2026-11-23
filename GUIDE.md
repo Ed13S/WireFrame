@@ -19,14 +19,45 @@ Either works. GitHub Pages is simplest. Use Render only if you also want the AI 
 ### Installing like an app
 Open the live link in Chrome/Edge/Safari and use **Install app / Add to Dock / Add to Home Screen**. It then works offline.
 
-### Mac app (three ways, easiest first)
-1. **Install from the browser (no build, recommended).** Open your live link in **Chrome or Edge** and click the install icon in the address bar (Safari 17+: File → Add to Dock). It gets its own window and works offline.
-2. **Download a ready-made `.dmg` from GitHub.** In your repo open **Actions → Build Mac app → Run workflow**. When it finishes, download the `WireFrame-mac` artifact at the bottom of the run, unzip, open the `.dmg` and drag WireFrame to Applications. The app is unsigned, so the first time **right-click → Open → Open** (or System Settings → Privacy & Security → Open Anyway).
-3. **Run it yourself.** Install Node.js, then in the `electron` folder run `npm install` then `npm start`. `npm run dist` builds the `.dmg`. To give the app AI without pasting a key, start it with `OPENROUTER_API_KEY=your-key npm start`.
+### Mac app: step by step
 
-## 2. AI without pasting a key
-- **Default (nothing to set up):** click **AI Assistant**, describe a part or circuit, copy the prompt it makes into any AI chat (Claude, ChatGPT…), paste the reply back. WireFrame builds, wires and checks it.
-- **One-click for students:** deploy the `proxy` folder on Render as a **Web Service** (build `npm install`, start `npm start`), add environment variable `OPENROUTER_API_KEY` (your OpenRouter key from openrouter.ai/keys stays on Render; optionally add `MODEL`, e.g. `anthropic/claude-sonnet-4.5` or any free model OpenRouter lists) and `ALLOWED_ORIGIN` = your Pages URL. Then in `config.js` set `window.AI_PROXY_URL = "https://your-proxy.onrender.com/api/ai"` and re-upload. The proxy limits each visitor to 20 requests per 10 minutes.
+**Option A: install from the browser (easiest, no download)**
+1. Open your live WireFrame link in **Chrome** or **Edge** on the Mac.
+2. Click the small install icon at the right end of the address bar, then **Install**. (In Safari 17+: **File → Add to Dock**.)
+3. WireFrame now has its own window and Dock icon, and works offline.
+
+**Option B: download the Mac app (.dmg) from GitHub**
+1. Go to github.com/Ed13S/WireFrame and open the **Actions** tab.
+2. Click **Build Mac app** in the left list, then **Run workflow → Run workflow** (green button). Wait about 3 to 5 minutes for the green tick.
+3. Click the finished run, scroll to **Artifacts** at the bottom, and click **WireFrame-mac** to download a zip.
+4. Double-click the zip to unzip it, then open the `.dmg` inside.
+5. Drag **WireFrame** onto the **Applications** folder.
+6. The app is unsigned, so the first time **right-click WireFrame in Applications, choose Open, then Open**. If macOS still blocks it: **System Settings → Privacy & Security → scroll down → Open Anyway**. You only do this once.
+
+**Option C: run it from source**
+1. Install Node.js from nodejs.org.
+2. Open Terminal, go into the project's `electron` folder, run `npm install`, then `npm start`.
+3. `npm run dist` builds the `.dmg` into `electron/dist`.
+
+## 2. AI with your API key (the key never goes in the web page)
+Get a key at **openrouter.ai/keys** (it starts with `sk-or-`). Never paste it into `config.js`, `index.html` or anything on GitHub.
+
+**Students on the website: use a Render proxy (key stays on Render)**
+1. Go to render.com, sign in with GitHub, then **New → Web Service** and pick the WireFrame repo.
+2. Set **Root Directory** to `proxy`, **Build Command** to `npm install`, **Start Command** to `npm start`, and the free instance type.
+3. Open **Environment** and add `OPENROUTER_API_KEY` = your key. Also add `ALLOWED_ORIGIN` = `https://ed13s.github.io` (your site address, no path). Optional: `MODEL` (default `anthropic/claude-sonnet-4.5`; any model OpenRouter lists works, including free ones).
+4. Click **Create Web Service** and wait for it to say Live. Copy the URL at the top, e.g. `https://wireframe-ai.onrender.com`.
+5. In the repo edit `config.js` so it reads `window.AI_PROXY_URL = "https://wireframe-ai.onrender.com/api/ai";` (your URL plus `/api/ai`) and commit.
+6. After a minute reload WireFrame, open **AI Assistant**, and it works with no key box. The free Render plan sleeps when idle, so the first request after a break can take about 30 seconds. Each visitor is limited to 20 requests per 10 minutes.
+
+**Just you, in the Mac app**
+A Mac app opened from the Dock doesn't see keys set in Terminal, so start it from Terminal:
+1. Open Terminal.
+2. Run: `OPENROUTER_API_KEY=sk-or-your-key /Applications/WireFrame.app/Contents/MacOS/WireFrame` (use your real key).
+3. AI Assistant now works inside that window. Closing Terminal closes the app, and you repeat the command next time.
+4. Running from source, use `OPENROUTER_API_KEY=sk-or-your-key npm start` in the `electron` folder instead.
+
+**No key at all:** AI Assistant always works by copy and paste. It writes a prompt, you paste it into any AI chat, then paste the reply back.
 
 ## 3. Using WireFrame
 **Start:** click **Lessons** for ready-made circuits, then press green **Play**.

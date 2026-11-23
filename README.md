@@ -15,10 +15,10 @@ Open `index.html` through any static web server (`python3 -m http.server`), or h
 Three ways, pick one:
 1. **Copy/paste (default):** WireFrame writes a prompt, you paste it into any AI chat, paste the reply back. Nothing to set up.
 2. **Your own proxy:** deploy `proxy/` as a free Render Web Service, set `OPENROUTER_API_KEY` (from openrouter.ai/keys) there, optionally `MODEL`, then set `window.AI_PROXY_URL = "https://your-app.onrender.com/api/ai"` in `config.js`. Students never see the key. Set `ALLOWED_ORIGIN` to your site URL.
-3. **Mac app:** `OPENROUTER_API_KEY` in your environment enables one-click AI.
+3. **Mac app:** start it from Terminal with `OPENROUTER_API_KEY=sk-or-... /Applications/WireFrame.app/Contents/MacOS/WireFrame` (a Dock launch can't see Terminal variables). Step by step in GUIDE.md.
 
 ## Mac app
-Easiest: install from the browser (Chrome/Edge install icon), or run the **Build Mac app** workflow under the repo's Actions tab and download the `.dmg` (unsigned: right-click → Open). Or:
+Step-by-step download and install is in GUIDE.md. Easiest: install from the browser (Chrome/Edge install icon), or run the **Build Mac app** workflow under the repo's Actions tab and download the `.dmg` (unsigned: right-click → Open). Or:
 ```
 cd electron && npm install && npm start     # run it
 npm run dist                                 # build a .dmg in electron/dist
