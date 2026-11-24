@@ -34,7 +34,7 @@
     else { P.forEach((p, i) => push(p.n, i, 0)); }
     return L; };
   B.sizeOf = (d) => { const k = B.kind(d), L = B.legsOf(d); let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9; L.forEach(l => { x0 = Math.min(x0, l.x); x1 = Math.max(x1, l.x); y0 = Math.min(y0, l.y); y1 = Math.max(y1, l.y); });
-    if (k === 'board') return { x0: 0, y0: 0, x1: x1 + 2, y1: 12 }; if (k === 'res' || k === 'diode' || k === 'axial') return { x0: -.5, y0: -1, x1: 4.5, y1: 1 }; if (k === 'led') return { x0: -.4, y0: -2.6, x1: 1.4, y1: .6 };
+    if (k === 'board') return { x0: 0, y0: 0, x1: x1 + 2, y1: 12 }; if (k === 'res' || k === 'diode' || k === 'axial') return { x0: -.5, y0: -1, x1: 4.5, y1: 1 }; if (k === 'led') return { x0: -.5, y0: -3, x1: 1.5, y1: .6 };
     if (k === 'dip' || k === 'seg') return { x0: -.5, y0: -.2, x1: x1 + .5, y1: y1 + .2 }; return { x0: x0 - .6, y0: y0 - 2, x1: x1 + .6, y1: y1 + .8 }; };
   B.xf = (inst, x, y) => { const bb = inst.bb; let rx = x, ry = y; for (let i = 0; i < (bb.rot || 0); i++) { const t = rx; rx = -ry; ry = t; } return [bb.x + rx, bb.y + ry]; };
   B.legPos = (inst) => { const d = A.def(inst.def); if (!d || !inst.bb) return []; return B.legsOf(d).map((l, i) => { const [x, y] = B.xf(inst, l.x, l.y); return { pin: l.pin, i, x, y }; }); };
