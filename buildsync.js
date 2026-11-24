@@ -35,8 +35,18 @@
       ends.slice(1).forEach(e => { const t = B.target(e.pt[0], e.pt[1]), r = t && find(t); if (r && roots.has(r)) return; let best = done[0], bd = 1e9; done.forEach(q => { const dd = Math.hypot(q.pt[0] - e.pt[0], q.pt[1] - e.pt[1]); if (dd < bd) { bd = dd; best = q; } }); addJ(best.pt, e.pt, PAL[col++ % PAL.length]); done.push(e); roots.add(r); }); });
     A.autosave(); };
 
+  /* ---- do the breadboard and the schematic describe the same connections (including supplies)? ---- */
+  A.bsyncFull = () => { const sch = A.nets(), bg = B.nets(), bad = [], key = (r, p) => r + '.' + p, idx = {}, gidx = {};
+    sch.forEach((n, i) => n.pins.forEach(p => { idx[key(p.inst.ref, p.n)] = i; })); bg.forEach((g, gi) => g.pins.forEach(p => { gidx[key(p.ref, p.pin)] = gi; }));
+    sch.forEach(n => { if (n.pins.length > 1) { const s = new Set(n.pins.map(p => gidx[key(p.inst.ref, p.n)])); if (s.size > 1 || s.has(undefined)) bad.push('schematic net not joined on the breadboard'); } });
+    bg.forEach(g => { if (g.pins.length > 1) { const s = new Set(g.pins.map(p => idx[key(p.ref, p.pin)])); if (s.size > 1 || s.has(undefined)) bad.push('breadboard joins pins the schematic keeps apart'); } });
+    bg.forEach(g => { if (!g.pins.length || (!g.plus.length && !g.minus.length)) return; const n = sch[idx[key(g.pins[0].ref, g.pins[0].pin)]]; if (!n) { bad.push('supply on an unknown net'); return; } if (g.minus.length && !isGnd(n)) bad.push('supply minus is not on ground'); if (g.plus.length && (isGnd(n) || !n.powerPins.length)) bad.push('supply plus is not on a power net'); });
+    sch.forEach(n => { if (!n.powerPins.length || !n.pins.length) return; const g = bg[gidx[key(n.pins[0].inst.ref, n.pins[0].n)]]; if (!g) { bad.push('power net missing on the breadboard'); return; } if (isGnd(n)) { if (!g.minus.length) bad.push('ground not connected on the breadboard'); } else if ((voltsOf(n) || 0) > 0 && !g.plus.length) bad.push('power not connected on the breadboard'); });
+    return bad; };
+
   /* ---- breadboard -> schematic ---- */
-  A.schFromBuild = async () => { const d = A.doc, insts = B.insts().filter(i => i.bb), groups = B.nets(), keep = {}; insts.forEach(i => keep[i.ref] = { bb: i.bb, sim: i.sim, def: i.def, value: i.value });
+  A.schFromBuild = async () => { const d = A.doc; if ((d.wires.length || d.labels.length) && !A.bsyncFull().length) { d.master = 'sch'; return; } /* same connections: keep the schematic exactly as drawn */
+    const insts = B.insts().filter(i => i.bb), groups = B.nets(), keep = {}; insts.forEach(i => keep[i.ref] = { bb: i.bb, sim: i.sim, def: i.def, value: i.value });
     const sorted = insts.slice().sort((a, b) => a.bb.x - b.bb.x), colOf = new Map(); sorted.forEach((i, n) => colOf.set(i.id, n));
     const spec = { title: d.meta.title || 'Breadboard circuit', parts: insts.map(i => ({ ref: i.ref, part: i.def, value: i.value, col: colOf.get(i.id), row: i.bb.y > 8.5 ? 1 : 0, rot: 0 })), nets: [] };
     groups.forEach(g => { const pins = g.pins.map(p => p.ref + '.' + p.pin); if (g.minus.length && g.plus.length) { spec.nets.push({ name: 'SHORT', pins }); return; } if (g.minus.length) { spec.nets.push({ name: 'GND', pins }); return; }
