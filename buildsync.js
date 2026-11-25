@@ -7,14 +7,17 @@
 
   /* ---- schematic -> breadboard ---- */
   A.buildFromSch = () => { const d = A.doc, insts = B.insts().slice(), nets = A.nets(); d.bw = []; const need = insts.filter(i => !i.bb || !isFinite(i.bb.x));
-    const placedMax = insts.filter(i => i.bb).reduce((m, i) => Math.max(m, B.bbox(i).x1), 1); let cx = Math.max(2, Math.ceil(placedMax) + 1); const free = { x: 1, y: 21, rowH: 0 };
+    const placedMax = insts.filter(i => i.bb).reduce((m, i) => Math.max(m, B.bbox(i).x1), 1); let cx = Math.max(2, Math.ceil(placedMax) + 1), cx2 = cx; const WRAP = 40; const free = { x: 1, y: 21, rowH: 0 };
     need.sort((a, b) => a.x - b.x || a.y - b.y);
     const onFree = (i, d0) => { const s = B.sizeOf(d0), w = s.x1 - s.x0 + 1, h = s.y1 - s.y0 + 1; if (free.x + w > 40) { free.x = 1; free.y += free.rowH + 3; free.rowH = 0; } i.bb = { x: free.x - s.x0, y: free.y - s.y0, rot: 0 }; free.x += w + 1; free.rowH = Math.max(free.rowH, h); };
     need.forEach(i => { const d0 = A.def(i.def), k = B.kind(d0), L = B.legsOf(d0), w = Math.max(...L.map(l => l.x)) + 1; let at = null;
       if (k === 'board' || k === 'free' || k === 'battery' || k === 'motor') return onFree(i, d0);
+      const straddle = k === 'dip' || k === 'seg' || k === 'push';
       if (k === 'dip' || k === 'seg') at = [cx, 7, w + 1]; else if (k === 'push') at = [cx, 7, 4]; else if (k === 'res' || k === 'diode' || k === 'axial') at = [cx, 4, 6]; else if (k === 'led' || k === 'elec') at = [cx, 6, 3]; else if (k === 'ceramic' || k === 'buzzer') at = [cx, 6, 4]; else at = [cx, 5, w + 2];
+      if (straddle) { at[0] = Math.max(cx, cx2); if (at[0] + at[2] > 63) return onFree(i, d0); i.bb = { x: at[0], y: at[1], rot: 0 }; cx = cx2 = at[0] + at[2]; return; }
+      if (cx + at[2] > WRAP && cx2 + at[2] <= WRAP) { i.bb = { x: cx2, y: at[1] + 7, rot: 0 }; cx2 += at[2]; return; } /* top half is full: use the lower half of the board */
       if (cx + at[2] > 63) return onFree(i, d0); i.bb = { x: at[0], y: at[1], rot: 0 }; cx += at[2]; });
-    const right = insts.filter(i => i.bb && B.holeStrip(B.legPos(i)[0].x, B.legPos(i)[0].y)).reduce((m, i) => Math.max(m, Math.ceil(B.bbox(i).x1)), 0); B.N = d.bn = Math.max(30, Math.min(63, right + 2));
+    const right = insts.filter(i => i.bb && !['board', 'free', 'battery', 'motor'].includes(B.kind(A.def(i.def))) && B.bbox(i).x1 < 64).reduce((m, i) => Math.max(m, Math.ceil(B.bbox(i).x1)), 0); B.N = d.bn = Math.max(30, Math.min(63, right + 2));
     // supplies from power nets
     const old = d.bsup || [], sups = []; let k = 0; const pos = nets.filter(n => n.powerPins.length && !isGnd(n) && (voltsOf(n) || 0) > 0);
     pos.slice(0, 4).forEach((n, i) => { const o = old[i]; sups.push({ id: o ? o.id : 'u' + (d.seq++), x: o ? o.x : -7, y: o ? o.y : 5 + i * 6, volts: voltsOf(n), net: n.name }); }); d.bsup = sups;
@@ -41,7 +44,7 @@
     sch.forEach(n => { if (n.pins.length > 1) { const s = new Set(n.pins.map(p => gidx[key(p.inst.ref, p.n)])); if (s.size > 1 || s.has(undefined)) bad.push('schematic net not joined on the breadboard'); } });
     bg.forEach(g => { if (g.pins.length > 1) { const s = new Set(g.pins.map(p => idx[key(p.ref, p.pin)])); if (s.size > 1 || s.has(undefined)) bad.push('breadboard joins pins the schematic keeps apart'); } });
     bg.forEach(g => { if (!g.pins.length || (!g.plus.length && !g.minus.length)) return; const n = sch[idx[key(g.pins[0].ref, g.pins[0].pin)]]; if (!n) { bad.push('supply on an unknown net'); return; } if (g.minus.length && !isGnd(n)) bad.push('supply minus is not on ground'); if (g.plus.length && (isGnd(n) || !n.powerPins.length)) bad.push('supply plus is not on a power net'); });
-    sch.forEach(n => { if (!n.powerPins.length || !n.pins.length) return; const g = bg[gidx[key(n.pins[0].inst.ref, n.pins[0].n)]]; if (!g) { bad.push('power net missing on the breadboard'); return; } if (isGnd(n)) { if (!g.minus.length) bad.push('ground not connected on the breadboard'); } else if ((voltsOf(n) || 0) > 0 && !g.plus.length) bad.push('power not connected on the breadboard'); });
+    if ((A.doc.bsup || []).length) sch.forEach(n => { if (!n.powerPins.length || !n.pins.length) return; const g = bg[gidx[key(n.pins[0].inst.ref, n.pins[0].n)]]; if (!g) { bad.push('power net missing on the breadboard'); return; } if (isGnd(n)) { if (!g.minus.length) bad.push('ground not connected on the breadboard'); } else if ((voltsOf(n) || 0) > 0 && !g.plus.length) bad.push('power not connected on the breadboard'); });
     return bad; };
 
   /* ---- breadboard -> schematic ---- */
