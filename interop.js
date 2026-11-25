@@ -48,6 +48,7 @@
     A.junctions().forEach(j => { o += `  (junction (at ${X(j.x)} ${X(j.y)}) (diameter 0) (color 0 0 0 0) (uuid ${qs(uuid())}))\n`; });
     d.wires.forEach(w => { o += `  (wire (pts (xy ${X(w.p[0])} ${X(w.p[1])}) (xy ${X(w.p[2])} ${X(w.p[3])})) (stroke (width 0) (type default)) (uuid ${qs(uuid())}))\n`; });
     d.labels.forEach(l => { o += `  (label ${qs(l.text)} (at ${X(l.x)} ${X(l.y)} 0) ${eff(1.27, false, 'left bottom')} (uuid ${qs(uuid())}))\n`; });
+    (d.nc || []).forEach(c => { o += `  (no_connect (at ${X(c.x)} ${X(c.y)}) (uuid ${qs(uuid())}))\n`; });
     d.notes.forEach(n => { o += `  (text ${qs(n.text)} (exclude_from_sim no) (at ${X(n.x)} ${X(n.y)} 0) ${eff(1.27, false, 'left')} (uuid ${qs(uuid())}))\n`; });
     insts().forEach(p => { const df = A.def(p.def), a = p.mir ? (p.rot || 0) * 90 : ((4 - (p.rot || 0)) % 4) * 90, pw = df.power;
       o += `  (symbol (lib_id ${qs('WireFrame:' + safe(p.def))}) (at ${X(p.x)} ${X(p.y)} ${a})${p.mir ? ' (mirror y)' : ''} (unit 1) (exclude_from_sim no) (in_bom ${pw ? 'no' : 'yes'}) (on_board ${pw ? 'no' : 'yes'}) (dnp no) (uuid ${qs(uuid())})\n` +
@@ -69,9 +70,10 @@
       nd.parts.push({ id: 'p' + (nd.seq++), def: d.id, x, y, rot, mir: my ? 1 : 0, ref: d.power ? '#PWR' + nd.seq : ref, value: val || d.value }); });
     all(tree, 'wire').forEach(w => { const pts = all(find(w, 'pts'), 'xy').map(p => [U(p[1]), U(p[2])]); for (let i = 0; i + 1 < pts.length; i++) { const a = pts[i], b = pts[i + 1]; if (a[0] === b[0] && a[1] === b[1]) continue; if (a[0] === b[0] || a[1] === b[1]) nd.wires.push({ id: 'w' + (nd.seq++), p: [a[0], a[1], b[0], b[1]] }); else { nd.wires.push({ id: 'w' + (nd.seq++), p: [a[0], a[1], b[0], a[1]] }, { id: 'w' + (nd.seq++), p: [b[0], a[1], b[0], b[1]] }); } } });
     ['label', 'global_label', 'hierarchical_label'].forEach(k => all(tree, k).forEach(l => { const [x, y] = pt(l); nd.labels.push({ id: 'l' + (nd.seq++), x, y, text: str(l[1]) }); }));
+    all(tree, 'no_connect').forEach(t => { const [x, y] = pt(t); nd.nc.push({ id: 'q' + (nd.seq++), x, y }); });
     all(tree, 'text').forEach(t => { const [x, y] = pt(t); nd.notes.push({ id: 'n' + (nd.seq++), x, y, text: str(t[1]) }); });
     const tb = find(tree, 'title_block'); if (tb) { const g = k => { const r = find(tb, k); return r ? str(r[1]) : ''; }; Object.assign(nd.meta, { title: g('title') || (fname || '').replace(/\.kicad_sch$/i, ''), date: g('date') || nd.meta.date, rev: g('rev'), company: g('company') }); const c = all(tb, 'comment')[0]; if (c) nd.meta.comment = str(c[2]); } else nd.meta.title = (fname || 'KiCad import').replace(/\.kicad_sch$/i, '');
-    const nm = nd.meta.title || 'KiCad import'; A.projects.newProject(nm); Object.assign(A.doc, { parts: nd.parts, wires: nd.wires, labels: nd.labels, notes: nd.notes, seq: nd.seq + 100 }); Object.assign(A.doc.meta, nd.meta, { file: nm + '.wireframe' });
+    const nm = nd.meta.title || 'KiCad import'; A.projects.newProject(nm); Object.assign(A.doc, { parts: nd.parts, wires: nd.wires, labels: nd.labels, notes: nd.notes, nc: nd.nc, seq: nd.seq + 100 }); Object.assign(A.doc.meta, nd.meta, { file: nm + '.wireframe' });
     A.refreshLib && A.refreshLib(); A.hist = []; A.fut = []; A.commit(); A.emit('load'); A.toast('Imported ' + nd.parts.length + ' parts from KiCad' + (warn.length ? ' (' + warn.length + ' skipped)' : '')); };
   A.importAnyFile = (name, text) => { if (/\.kicad_sch$/i.test(name)) return A.importKicadSch(text, name); if (/\.kicad_sym$/i.test(name)) return A.importKicadSym(text, name); return false; };
 

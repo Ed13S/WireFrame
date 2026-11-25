@@ -77,6 +77,7 @@
     A.junctions().forEach(j => { s += `<circle class="junc" cx="${j.x}" cy="${j.y}" r=".42"/>`; });
     d.labels.forEach(l => { const w = Math.max(2, l.text.length * .75 + 1), fl = l.flip ? -1 : 1;
       s += `<g data-id="${l.id}" class="lbl${sel.has(l.id) ? ' sel' : ''}"><path class="lblline" d="M${l.x} ${l.y}h${f2(w * fl)}"/><text x="${l.x + .3 * fl}" y="${l.y - .75}" font-size="1.15" class="s-lbl" text-anchor="${fl < 0 ? 'end' : 'start'}">${esc(l.text)}</text><circle class="lblpt" cx="${l.x}" cy="${l.y}" r=".3"/><rect class="hit" x="${fl < 0 ? l.x - w - .5 : l.x - .5}" y="${l.y - 1.9}" width="${f2(w + 1)}" height="2.6"/></g>`; });
+    (d.nc || []).forEach(c => { s += `<g data-id="${c.id}" class="nc${sel.has(c.id) ? ' sel' : ''}"><path d="M${c.x - .8} ${c.y - .8}l1.6 1.6M${c.x + .8} ${c.y - .8}l-1.6 1.6"/><rect class="hit" x="${c.x - 1}" y="${c.y - 1}" width="2" height="2"/></g>`; });
     d.notes.forEach(n => { s += `<g data-id="${n.id}" class="note${sel.has(n.id) ? ' sel' : ''}"><text x="${n.x}" y="${n.y}" font-size="${n.size || 1.4}" class="s-note" dominant-baseline="central">${esc(n.text)}</text><rect class="hit" x="${n.x - .5}" y="${n.y - 1.2}" width="${f2(n.text.length * (n.size || 1.4) * .62 + 1)}" height="2.4"/></g>`; });
     (o.marks || []).forEach(m => { s += `<g class="mark"><circle cx="${m.x}" cy="${m.y}" r="1.2"/><path d="M${m.x - .7} ${m.y - .7}l1.4 1.4M${m.x + .7} ${m.y - .7}l-1.4 1.4"/></g>`; });
     return s;

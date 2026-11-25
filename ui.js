@@ -59,11 +59,11 @@
   /* ---------- selection / editing ops ---------- */
   const findItem = id => A.doc.parts.find(p => p.id === id) || A.doc.wires.find(p => p.id === id) || A.doc.labels.find(p => p.id === id) || A.doc.notes.find(p => p.id === id);
   A.select = (ids) => { S.sel = new Set(ids); S.hl = new Set(); renderProps(); A.render(); };
-  function deleteSel() { if (!S.sel.size) return; const d = A.doc, s = S.sel; d.parts = d.parts.filter(p => !s.has(p.id)); d.wires = d.wires.filter(p => !s.has(p.id)); d.labels = d.labels.filter(p => !s.has(p.id)); d.notes = d.notes.filter(p => !s.has(p.id)); S.sel = new Set(); A.commit(); }
+  function deleteSel() { if (!S.sel.size) return; const d = A.doc, s = S.sel; d.parts = d.parts.filter(p => !s.has(p.id)); d.wires = d.wires.filter(p => !s.has(p.id)); d.labels = d.labels.filter(p => !s.has(p.id)); d.notes = d.notes.filter(p => !s.has(p.id)); d.nc = (d.nc || []).filter(p => !s.has(p.id)); S.sel = new Set(); A.commit(); }
   function rotateSel(dir) { if (S.placing) { S.rot = (S.rot + 1) % 4; drawOverlay(); return; } let ch = false;
     A.doc.parts.forEach(p => { if (S.sel.has(p.id)) { p.rot = ((p.rot || 0) + (dir || 1) + 4) % 4; ch = true; } }); if (ch) A.commit(); }
   function mirrorSel() { if (S.placing) { S.mir ^= 1; drawOverlay(); return; } let ch = false; A.doc.parts.forEach(p => { if (S.sel.has(p.id)) { p.mir = p.mir ? 0 : 1; ch = true; } }); if (ch) A.commit(); }
-  function copySel() { const d = A.doc, s = S.sel; if (!s.size) return; S.clip = JSON.stringify({ parts: d.parts.filter(p => s.has(p.id)), wires: d.wires.filter(p => s.has(p.id)), labels: d.labels.filter(p => s.has(p.id)), notes: d.notes.filter(p => s.has(p.id)) }); A.toast('Copied'); }
+  function copySel() { const d = A.doc, s = S.sel; if (!s.size) return; S.clip = JSON.stringify({ parts: d.parts.filter(p => s.has(p.id)), wires: d.wires.filter(p => s.has(p.id)), labels: d.labels.filter(p => s.has(p.id)), notes: d.notes.filter(p => s.has(p.id)), nc: (d.nc || []).filter(p => s.has(p.id)) }); A.toast('Copied'); }
   function paste(dx, dy) { if (!S.clip) return; const c = JSON.parse(S.clip), ids = []; dx = dx === undefined ? 2 : dx; dy = dy === undefined ? 2 : dy;
     c.parts.forEach(p => { const n = Object.assign({}, p, { id: A.id('p'), x: p.x + dx, y: p.y + dy }); const df = A.def(n.def); if (df && !(n.ref || '').startsWith('#')) n.ref = A.nextRef(df.ref); A.doc.parts.push(n); ids.push(n.id); });
     c.wires.forEach(w => { const n = { id: A.id('w'), p: [w.p[0] + dx, w.p[1] + dy, w.p[2] + dx, w.p[3] + dy] }; A.doc.wires.push(n); ids.push(n.id); });
@@ -75,7 +75,7 @@
   /* ---------- tools ---------- */
   function setTool(t) { S.tool = t; if (t !== 'place') S.placing = null; if (t !== 'wire') S.draft = null;
     $$('.tool').forEach(b => b.classList.toggle('on', b.dataset.tool === t)); svg.style.cursor = t === 'select' ? 'default' : 'crosshair';
-    $('#hint').textContent = { select: 'Click to select, drag to move, drag on empty space to box-select. Click a wire to highlight its net.', wire: 'Click to start a wire, click again to bend or finish. Click on a pin to connect. Esc or double-click to stop.', label: 'Click on a wire or pin to name the net.', text: 'Click to place a note.', place: 'Click to place. R rotates, M mirrors, Esc stops placing.' }[t] || ''; A.render(); }
+    $('#hint').textContent = { select: 'Click to select, drag to move, drag on empty space to box-select. Click a wire to highlight its net.', wire: 'Click to start a wire, click again to bend or finish. Click on a pin to connect. Esc or double-click to stop.', label: 'Click on a wire or pin to name the net.', text: 'Click to place a note.', nc: 'Click a pin to add a no-connect flag (X). Click a flag again to remove it. Esc to stop.', place: 'Click to place. R rotates, M mirrors, Esc stops placing.' }[t] || ''; A.render(); }
   A.setTool = setTool;
   $$('.tool').forEach(b => b.onclick = () => setTool(b.dataset.tool));
   $('#bRot').onclick = () => rotateSel(1); $('#bMir').onclick = mirrorSel; $('#bDel').onclick = deleteSel; $('#bUndo').onclick = A.undo; $('#bRedo').onclick = A.redo; $('#bFit').onclick = A.fit;
@@ -109,6 +109,7 @@
       const segs = draftSegs(); if (segs.length) { segs.forEach(s => A.doc.wires.push({ id: A.id('w'), p: s })); S.draft.pts.push([sx, sy]); S.draft.hfirst = undefined; S.draft.n = (S.draft.n || 0) + 1;
         if (kind) { S.draft = null; } A.commit(); } return; }
     if (S.tool === 'label') { const lbl = A.nets().find(n => n.points.includes(A.key(sx, sy))); askText('Net label name', lbl && !lbl.auto ? lbl.name : '', v => { A.doc.labels.push({ id: A.id('l'), x: sx, y: sy, text: v }); A.commit(); }); return; }
+    if (S.tool === 'nc') { const nc = A.doc.nc = A.doc.nc || [], i = nc.findIndex(c => Math.abs(c.x - sx) < .3 && Math.abs(c.y - sy) < .3); if (i >= 0) nc.splice(i, 1); else nc.push({ id: A.id('q'), x: sx, y: sy }); A.commit(); return; }
     if (S.tool === 'text') { askText('Note text', '', v => { A.doc.notes.push({ id: A.id('n'), x: sx, y: sy, text: v }); A.commit(); }); return; }
     // select tool
     const id = hitId(e.target);
@@ -168,6 +169,7 @@
     const sel1 = () => [...S.sel].map(findItem).filter(Boolean)[0], focus = id => { const i = $(id); if (i) { i.focus(); i.select(); } };
     const startGrab = () => { if (!S.sel.size) return; const d = { type: 'move', x0: S.mouse.x, y0: S.mouse.y, last: [S.mouse.x, S.mouse.y], moved: false, clickId: null, orig: null, sticky: true }; startMove(d); S.drag = d; A.toast('Move: click to drop, Esc to cancel', 1800); };
     if (e.ctrlKey && k === 'home' || (e.shiftKey && k === 'home')) A.fitContent();
+    else if (k === 'q') setTool('nc');
     else if (k === 'a') { setTool('select'); const q = $('#q'); if (q) { q.focus(); q.select(); } }
     else if (k === 'p') { const c = $$('#cats [data-cat]').find(b => b.dataset.cat === 'Power'); if (c) c.click(); const q = $('#q'); if (q) { q.value = ''; q.focus(); } }
     else if (k === 'w') setTool('wire'); else if (k === 'l') setTool('label'); else if (k === 't') setTool('text'); else if (k === 's') setTool('select');

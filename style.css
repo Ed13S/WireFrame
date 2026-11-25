@@ -105,7 +105,7 @@ table.pins input,table.pins select{width:100%}
 .sel .s-line,.sel .wire,.sel .lblline{stroke:var(--sel)} .sel .s-txt,.sel .s-ref,.sel .s-val,.sel .s-lbl,.sel .s-note{fill:var(--sel)} .sel .s-solid{fill:var(--sel)}
 .hl .wire{stroke:var(--sel);stroke-width:.3}
 .ghost{opacity:.7;pointer-events:none}
-.mark circle{fill:none;stroke:var(--bad);stroke-width:.2} .mark path{stroke:var(--bad);stroke-width:.2}
+.nc path{stroke:#4aa3ff;stroke-width:.25;fill:none;stroke-linecap:round} .nc.sel path{stroke:var(--sel)} .nc .hit{fill:transparent} .mark circle{fill:none;stroke:var(--bad);stroke-width:.2} .mark path{stroke:var(--bad);stroke-width:.2}
 .guide{stroke:var(--draft);stroke-width:.14;stroke-dasharray:.6 .4;fill:none}
 .rubber{fill:rgba(29,111,184,.13);stroke:var(--draft);stroke-width:.12;stroke-dasharray:.5 .4}
 .snapdot{fill:none;stroke:var(--draft);stroke-width:.18}

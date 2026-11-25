@@ -5,7 +5,7 @@ const App = window.App = {
 };
 (function () {
   const A = App;
-  A.newDoc = () => ({ parts: [], wires: [], labels: [], notes: [], defs: {}, meta: { title: 'Untitled schematic', author: '', date: new Date().toISOString().slice(0, 10) }, seq: 1 });
+  A.newDoc = () => ({ parts: [], wires: [], labels: [], notes: [], nc: [], defs: {}, meta: { title: 'Untitled schematic', author: '', date: new Date().toISOString().slice(0, 10) }, seq: 1 });
   A.doc = A.newDoc();
   A.id = (p) => p + (A.doc.seq++);
   A.on = (fn) => A.listeners.push(fn);
@@ -92,7 +92,8 @@ const App = window.App = {
   };
   A.erc = () => {
     const res = [], nets = A.nets();
-    nets.forEach(n => { const all = n.pins.concat(n.powerPins);
+    const ncAt = (x, y) => (A.doc.nc || []).some(c => Math.abs(c.x - x) < .3 && Math.abs(c.y - y) < .3);
+    nets.forEach(n => { const all = n.pins.concat(n.powerPins); if (n.pins.length === 1 && !n.powerPins.length && !n.labels.length && ncAt(n.pins[0].x, n.pins[0].y)) return;
       if (n.pins.length === 1 && !n.wires.length && !n.labels.length && !n.powerPins.length) res.push({ kind: 'bad', text: `Unconnected pin ${n.pins[0].inst.ref}.${n.pins[0].n} (${n.pins[0].name || 'no name'})`, x: n.pins[0].x, y: n.pins[0].y });
       else if (n.pins.length === 1 && n.wires.length && !n.labels.length && !n.powerPins.length && n.points.length <= 2) res.push({ kind: 'bad', text: `Wire to ${n.pins[0].inst.ref}.${n.pins[0].n} goes nowhere`, x: n.pins[0].x, y: n.pins[0].y });
       if (n.pins.length === 0 && n.powerPins.length === 1 && !n.wires.length) res.push({ kind: 'bad', text: `Power symbol ${n.name} is not connected to anything`, x: n.powerPins[0].x, y: n.powerPins[0].y });
@@ -139,7 +140,7 @@ const App = window.App = {
   A.redo = () => { if (!A.fut.length) return; const s = A.fut.pop(); A.hist.push(s); A.restore(s); };
   A.exportDoc = () => { const o = JSON.parse(snap()); o.defs = {}; o.format = 'wireframe/1';
     A.doc.parts.forEach(p => { const d = A.def(p.def); if (d && !d.builtin) { const c = Object.assign({}, d); delete c.of; o.defs[p.def] = c; } }); return o; };
-  A.importDoc = (o) => { const d = A.newDoc(); Object.assign(d, { parts: o.parts || [], wires: o.wires || [], labels: o.labels || [], notes: o.notes || [], meta: o.meta || d.meta, seq: o.seq || 1000, defs: o.defs || {}, bw: o.bw || [], bsup: o.bsup || [], bn: o.bn || 30, master: o.master || 'sch', code: o.code });
+  A.importDoc = (o) => { const d = A.newDoc(); Object.assign(d, { parts: o.parts || [], wires: o.wires || [], labels: o.labels || [], notes: o.notes || [], nc: o.nc || [], meta: o.meta || d.meta, seq: o.seq || 1000, defs: o.defs || {}, bw: o.bw || [], bsup: o.bsup || [], bn: o.bn || 30, master: o.master || 'sch', code: o.code });
     Object.keys(d.defs).forEach(id => { if (!A.LIB[id]) { A.LIB[id] = d.defs[id]; } });
     A.doc = d; A.hist = []; A.fut = []; A.hist.push(snap()); A.emit('load'); };
   A.autosave = () => { clearTimeout(A._as); A._as = setTimeout(() => { try { localStorage.setItem('ss_doc', JSON.stringify(A.exportDoc())); } catch (e) {} }, 400); };
