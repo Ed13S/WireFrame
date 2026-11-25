@@ -22,6 +22,7 @@ Copyright (c) 2026 Ed13S (the "Owner"). All rights reserved.
 
 4. Third-party material. The KiCad symbol library data under lib/ is not covered by this
    licence; it remains under its own licence (see lib/LICENSE-KiCad-libraries.md).
+   The Newstroke font (fonts/newstroke.woff2) is third-party material; see THIRD_PARTY.md.
    KiCad is a trademark of its respective owners; WireFrame is not affiliated with it.
 
 5. Your own work. Circuits, schematics and files you create with WireFrame belong to you.

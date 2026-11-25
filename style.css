@@ -182,3 +182,5 @@ body.libopen #lib{display:flex}
 .s-txt,.s-pin,.s-val,.s-ref,.s-lbl,.s-note,.tb{font-family:"Helvetica Neue",Arial,"Segoe UI",sans-serif} .s-ref,.s-lbl{font-weight:400} .tb.cm{fill:var(--txt,#006464);font-size:1.9px}
 @media (max-width:900px){#lib{left:6px;right:6px;width:auto}}
 .hs{fill:none!important;stroke-linecap:round;stroke-linejoin:round} .hs.s-txt,.hs.s-pin,.hs.s-val,.hs.s-ref{stroke:var(--pinc)} .hs.s-lbl{stroke:var(--txt)} .hs.s-note{stroke:var(--fg)} .hs.tb{stroke:#23262b} .hs.tb.cm{stroke:var(--txt,#006464)} .sel .hs{stroke:var(--sel)}
+@font-face{font-family:"Newstroke";src:url(fonts/newstroke.woff2) format("woff2");font-display:swap}
+.s-txt,.s-pin,.s-val,.s-ref,.s-lbl,.s-note,.tb{font-family:"Newstroke","Helvetica Neue",Arial,sans-serif!important;font-weight:400!important} .tb.b{font-weight:400!important}

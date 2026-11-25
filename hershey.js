@@ -13,5 +13,5 @@
     const k = size * .74 / 21, g = glyphs(un(t), k); if (!g.d) return all; const ox = x - (an === 'middle' ? g.w / 2 : an === 'end' ? g.w : 0), oy = y - 22 * k + (cen ? 10.5 * k : 0) + 0;
     const bold = /\bb\b|s-ref|s-lbl/.test(cls) ? 1.5 : 1;
     return `<path class="hs ${cls}"${tr ? ` transform="${tr}"` : ''} transform-origin="0 0" d="${g.d.replace(/([\d.-]+),([\d.-]+)/g, (m, px, py) => (+(+px + ox).toFixed(3)) + ',' + (+(+py + oy).toFixed(3)))}" stroke-width="${(size * .075 * bold).toFixed(3)}"/>`; });
-  const w0 = A.worldSVG; if (w0) A.worldSVG = function () { return A.strokeify(w0.apply(this, arguments)); };
+  const w0 = A.worldSVG; if (w0 && A.USE_HERSHEY) A.worldSVG = function () { return A.strokeify(w0.apply(this, arguments)); };
 })();

@@ -5,7 +5,7 @@
  "main": "main.js",
  "license": "SEE LICENSE IN ../LICENSE",
  "scripts": {
-  "prep": "rm -rf app && mkdir app && cp -R ../index.html ../*.js ../*.css ../*.webmanifest ../icon* ../lib app/ && rm -f app/sw.js",
+  "prep": "rm -rf app && mkdir app && cp -R ../index.html ../*.js ../*.css ../*.webmanifest ../icon* ../lib ../fonts app/ && rm -f app/sw.js",
   "start": "npm run prep && electron .",
   "dist": "npm run prep && electron-builder --mac --publish never"
  },
