@@ -133,9 +133,9 @@ const App = window.App = {
   };
 
   /* ---------- undo / persistence ---------- */
-  const snap = () => JSON.stringify({ parts: A.doc.parts, wires: A.doc.wires, labels: A.doc.labels, notes: A.doc.notes, meta: A.doc.meta, seq: A.doc.seq, bw: A.doc.bw || [], bsup: A.doc.bsup || [], bn: A.doc.bn || 30, master: A.doc.master || 'sch', code: A.doc.code });
+  const snap = () => JSON.stringify({ parts: A.doc.parts, wires: A.doc.wires, labels: A.doc.labels, notes: A.doc.notes, nc: A.doc.nc || [], meta: A.doc.meta, seq: A.doc.seq, bw: A.doc.bw || [], bsup: A.doc.bsup || [], bn: A.doc.bn || 30, master: A.doc.master || 'sch', code: A.doc.code });
   A.commit = () => { A.hist.push(snap()); if (A.hist.length > 120) A.hist.shift(); A.fut = []; A.autosave(); A.emit('change'); };
-  A.restore = (s) => { const o = JSON.parse(s); Object.assign(A.doc, o); A.emit('change'); A.autosave(); };
+  A.restore = (s) => { const o = JSON.parse(s); if (!o.nc) o.nc = []; Object.assign(A.doc, o); A.emit('change'); A.autosave(); };
   A.undo = () => { if (A.hist.length < 2) return; A.fut.push(A.hist.pop()); A.restore(A.hist[A.hist.length - 1]); };
   A.redo = () => { if (!A.fut.length) return; const s = A.fut.pop(); A.hist.push(s); A.restore(s); };
   A.exportDoc = () => { const o = JSON.parse(snap()); o.defs = {}; o.format = 'wireframe/1';

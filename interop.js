@@ -42,7 +42,7 @@
   function pinLine(d, s) { return d.pins.some(p => (s.p[0] === p.x && s.p[1] === p.y) || (s.p[2] === p.x && s.p[3] === p.y)); }
   function pinLen(d, p) { for (const s of d.draw) if (s.t === 'l') { if (s.p[0] === p.x && s.p[1] === p.y) return Math.hypot(s.p[2] - s.p[0], s.p[3] - s.p[1]) || 2; if (s.p[2] === p.x && s.p[3] === p.y) return Math.hypot(s.p[2] - s.p[0], s.p[3] - s.p[1]) || 2; } return 2; }
   A.kicadSch = () => { const d = A.doc, m = d.meta, used = {}; insts().forEach(p => used[p.def] = 1);
-    let o = `(kicad_sch (version 20231120) (generator "wireframe") (generator_version "1.0.1")\n  (uuid ${qs(uuid())})\n  (paper "A4")\n  (title_block (title ${qs(m.title)}) (date ${qs(m.date)}) (rev ${qs(m.rev || '1')}) (company ${qs(m.company || '')}) (comment 1 ${qs(m.comment || '')}))\n  (lib_symbols\n`;
+    let o = `(kicad_sch (version 20231120) (generator "wireframe") (generator_version "1.0.1")\n  (uuid ${qs(uuid())})\n  (paper "A4")\n  (title_block (title ${qs(m.title)}) (date ${qs(m.date)}) (rev ${qs(m.rev || '1')}) (company ${qs(m.company || '')}) (comment 1 ${qs(m.comment || '')})${[2, 3, 4].map(i => m['comment' + i] ? ` (comment ${i} ${qs(m['comment' + i])})` : '').join('')})\n  (lib_symbols\n`;
     Object.keys(used).forEach(id => { o += libSymbol(id, A.def(id)); }); o += '  )\n';
     const X = v => f(v * MM);
     A.junctions().forEach(j => { o += `  (junction (at ${X(j.x)} ${X(j.y)}) (diameter 0) (color 0 0 0 0) (uuid ${qs(uuid())}))\n`; });
@@ -72,7 +72,7 @@
     ['label', 'global_label', 'hierarchical_label'].forEach(k => all(tree, k).forEach(l => { const [x, y] = pt(l); nd.labels.push({ id: 'l' + (nd.seq++), x, y, text: str(l[1]) }); }));
     all(tree, 'no_connect').forEach(t => { const [x, y] = pt(t); nd.nc.push({ id: 'q' + (nd.seq++), x, y }); });
     all(tree, 'text').forEach(t => { const [x, y] = pt(t); nd.notes.push({ id: 'n' + (nd.seq++), x, y, text: str(t[1]) }); });
-    const tb = find(tree, 'title_block'); if (tb) { const g = k => { const r = find(tb, k); return r ? str(r[1]) : ''; }; Object.assign(nd.meta, { title: g('title') || (fname || '').replace(/\.kicad_sch$/i, ''), date: g('date') || nd.meta.date, rev: g('rev'), company: g('company') }); const c = all(tb, 'comment')[0]; if (c) nd.meta.comment = str(c[2]); } else nd.meta.title = (fname || 'KiCad import').replace(/\.kicad_sch$/i, '');
+    const tb = find(tree, 'title_block'); if (tb) { const g = k => { const r = find(tb, k); return r ? str(r[1]) : ''; }; Object.assign(nd.meta, { title: g('title') || (fname || '').replace(/\.kicad_sch$/i, ''), date: g('date') || nd.meta.date, rev: g('rev'), company: g('company') }); all(tb, 'comment').forEach(c => { const i = parseInt(str(c[1]), 10), t = str(c[2]); if (i === 1) nd.meta.comment = t; else if (i >= 2 && i <= 9) nd.meta['comment' + i] = t; }); } else nd.meta.title = (fname || 'KiCad import').replace(/\.kicad_sch$/i, '');
     const nm = nd.meta.title || 'KiCad import'; A.projects.newProject(nm); Object.assign(A.doc, { parts: nd.parts, wires: nd.wires, labels: nd.labels, notes: nd.notes, nc: nd.nc, seq: nd.seq + 100 }); Object.assign(A.doc.meta, nd.meta, { file: nm + '.wireframe' });
     A.refreshLib && A.refreshLib(); A.hist = []; A.fut = []; A.commit(); A.emit('load'); A.toast('Imported ' + nd.parts.length + ' parts from KiCad' + (warn.length ? ' (' + warn.length + ' skipped)' : '')); };
   A.importAnyFile = (name, text) => { if (/\.kicad_sch$/i.test(name)) return A.importKicadSch(text, name); if (/\.kicad_sym$/i.test(name)) return A.importKicadSym(text, name); return false; };

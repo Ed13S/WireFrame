@@ -19,6 +19,7 @@
     <button data-tool="select" class="tool on" title="Select (S)">Select</button>
     <button data-tool="wire" class="tool" title="Draw wire (W)">Wire</button>
     <button data-tool="label" class="tool" title="Net label (L)">Label</button>
+    <button id="bAdd" class="tool" title="Add a part (A)">+ Part</button>
     <button data-tool="text" class="tool" title="Text note (T)">Note</button>
     <button data-tool="nc" class="tool" title="No-connect flag (Q)">No-connect</button>
     <span class="sep"></span>
@@ -70,7 +71,8 @@
 
 <main id="work">
   <aside id="lib" aria-label="Parts library">
-    <div class="pane-head"><b>Parts</b><button id="bNewPart" class="small">+ New part</button></div>
+    <div class="pane-head"><b>Add part</b><span><button id="bNewPart" class="small">+ New part</button> <button id="bLibX" class="small" title="Close (Esc)">✕</button></span></div>
+    <div id="quick"><button data-q="LED">LED</button><button data-q="R">Resistor</button><button data-q="C">Cap</button><button data-q="D">Diode</button><button data-q="SW">Switch</button><button data-q="GND">GND</button><button data-q="V5">+5V</button></div>
     <input id="q" type="search" placeholder="Search parts…" aria-label="Search parts" autocomplete="off">
     <div id="cats" class="chips"></div>
     <div id="partList" role="listbox"></div>
@@ -78,7 +80,7 @@
 
   <section id="stage">
     <svg id="svg" tabindex="0" aria-label="Schematic canvas"></svg>
-    <div id="hint" class="hint">Pick a part on the left, click the sheet to place it. Press W to draw wires.</div>
+    <div id="hint" class="hint">Press A to add a part, W to draw wires, Q for a no-connect flag. Ctrl+F1 lists every shortcut.</div>
     <div id="status"><span id="stPos">0, 0</span><span id="stNet"></span><span id="stZoom">100%</span>
       <span class="grow"></span><button id="bFit" class="small">Fit</button></div>
   </section>
