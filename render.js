@@ -58,7 +58,7 @@
   A.sheetSVG = () => { const { w, h } = A.SHEET, m = A.doc.meta, bw = 110, rh = 5, n = 7, bh = rh * n, tx = w - 3 - bw, ty = h - 3 - bh, L = tx + 2;
     const T = (row, t, sz, cls, dx) => `<text class="tb ${cls || ''}" x="${L + (dx || 0)}" y="${ty + rh * row + rh / 2}" font-size="${sz}" dominant-baseline="central">${esc(t)}</text>`;
     const lines = []; for (let i = 1; i < n; i++) lines.push(`M${tx} ${ty + rh * i}H${w - 3}`);
-    return `<g class="sheet"><rect class="paper" x="0" y="0" width="${w}" height="${h}"/><rect class="frame" x="3" y="3" width="${w - 6}" height="${h - 6}"/><rect class="frame" x="${tx}" y="${ty}" width="${bw}" height="${bh}"/>` +
+    return `<g class="sheet"><rect class="paper" x="0" y="0" width="${w}" height="${h}"/><rect class="gridfill" x="0" y="0" width="${w}" height="${h}" fill="url(#gridp)" pointer-events="none"/><rect class="frame" x="3" y="3" width="${w - 6}" height="${h - 6}"/><rect class="frame" x="${tx}" y="${ty}" width="${bw}" height="${bh}"/>` +
       `<path class="frame" d="${lines.join('')}M${tx + 62} ${ty + rh * 5}V${ty + rh * 6}M${tx + 88} ${ty + rh * 5}V${h - 3}"/>` +
       T(0, m.comment || '', 1.8, 'cm') + T(1, [m.comment2, m.comment3, m.comment4, m.author].filter(Boolean).join('   '), 1.8, '') + T(2, [m.company, m.project].filter(Boolean).join('  ') || 'WireFrame', 1.9, 'b') + T(3, 'Sheet: /   File: ' + (m.file || 'untitled.wireframe'), 1.4, 'sm') +
       T(4, 'Title: ' + (m.title || ''), 2.4, 'b i') + T(5, 'Size: ' + (m.size || 'A4'), 1.5, 'sm') + T(5, 'Date: ' + (m.date || ''), 1.5, 'sm', 62 - 0) + T(5, 'Rev: ' + (m.rev || '1'), 1.6, 'b', 88) +

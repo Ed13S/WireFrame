@@ -19,7 +19,8 @@
     <button data-tool="select" class="tool on" title="Select (S)">Select</button>
     <button data-tool="wire" class="tool" title="Draw wire (W)">Wire</button>
     <button data-tool="label" class="tool" title="Net label (L)">Label</button>
-    <button id="bAdd" class="tool" title="Add a part (A)">+ Part</button>
+    <button id="bAdd" class="tool accent" title="Show or hide the parts list (A)">Parts (A)</button>
+    <button id="bProps" class="tool" title="Show or hide Properties and Check messages (I)">Info (I)</button>
     <button data-tool="text" class="tool" title="Text note (T)">Note</button>
     <button data-tool="nc" class="tool" title="No-connect flag (Q)">No-connect</button>
     <span class="sep"></span>
@@ -80,12 +81,13 @@
 
   <section id="stage">
     <svg id="svg" tabindex="0" aria-label="Schematic canvas"></svg>
-    <div id="hint" class="hint">Press A to add a part, W to draw wires, Q for a no-connect flag. Ctrl+F1 lists every shortcut.</div>
+    <div id="hint" class="hint">A parts · W wire · Q no-connect · Ctrl+F1 all shortcuts</div>
     <div id="status"><span id="stPos">0, 0</span><span id="stNet"></span><span id="stZoom">100%</span>
       <span class="grow"></span><button id="bFit" class="small">Fit</button></div>
   </section>
 
   <aside id="props" aria-label="Properties">
+    <div class="pane-head"><b>Info</b><button id="bPropsX" class="small" title="Hide (I)">✕</button></div>
     <div class="pane-head"><b>Properties</b></div>
     <div id="propBody" class="pbody"><p class="muted">Select a part to edit its reference and value.</p></div>
     <div class="pane-head"><b>Messages</b></div>

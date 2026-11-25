@@ -3,18 +3,18 @@
   --bg:#0a0a0a; --panel:#141414; --panel2:#1f1f1f; --line:#333; --fg:#ececec; --muted:#9a9a9a;
   --accent:#b4ff00; --accent-fg:#0a1400; --blue:#b4ff00; --ok:#4cd488; --bad:#ff8272; color-scheme:dark;
   /* the sheet your circuit sits on: cream, same in every theme */
-  --stage:#eee4c4; --paper:#f7f0d8; --grid:#c4b78e; --sel:#d8731a; --draft:#1d6fb8;
+  --stage:#eee4c4; --paper:#f7f0d8; --grid:#a79b6c; --sel:#d8731a; --draft:#1d6fb8;
   --wire:#0a7a2f; --body:#8a1c1c; --fill:#fff3b0; --pinc:#0f6a73; --txt:#1d4f91; --junc:#0a7a2f;
   font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
 }
 @media (prefers-color-scheme:light){:root:not([data-theme="dark"]){
   --bg:#dcdcd6; --panel:#efeee9; --panel2:#e2e1db; --line:#b9b8b0; --fg:#1c1c1c; --muted:#5d5d58;
   --accent:#2f8f4e; --accent-fg:#ffffff; --blue:#2b8fd6; --ok:#1f8a3b; --bad:#c0392b; color-scheme:light;
-  --stage:#f5f4ef; --paper:#f5f4ef; --grid:#d3d1c4; --sel:#d8731a; --draft:#2b8fd6; --wire:#008400; --body:#4fa9e6; --fill:#ffffc2; --pinc:#006464; --txt:#006464; --junc:#008400}}
+  --stage:#f5f4ef; --paper:#f5f4ef; --grid:#a9a89a; --sel:#d8731a; --draft:#2b8fd6; --wire:#008400; --body:#4fa9e6; --fill:#ffffc2; --pinc:#006464; --txt:#006464; --junc:#008400}}
 :root[data-theme="light"]{
   --bg:#dcdcd6; --panel:#efeee9; --panel2:#e2e1db; --line:#b9b8b0; --fg:#1c1c1c; --muted:#5d5d58;
   --accent:#2f8f4e; --accent-fg:#ffffff; --blue:#2b8fd6; --ok:#1f8a3b; --bad:#c0392b; color-scheme:light;
-  --stage:#f5f4ef; --paper:#f5f4ef; --grid:#d3d1c4; --sel:#d8731a; --draft:#2b8fd6; --wire:#008400; --body:#4fa9e6; --fill:#ffffc2; --pinc:#006464; --txt:#006464; --junc:#008400}
+  --stage:#f5f4ef; --paper:#f5f4ef; --grid:#a9a89a; --sel:#d8731a; --draft:#2b8fd6; --wire:#008400; --body:#4fa9e6; --fill:#ffffc2; --pinc:#006464; --txt:#006464; --junc:#008400}
 *{box-sizing:border-box}
 [hidden]{display:none!important}
 html,body{height:100%;margin:0}
@@ -184,3 +184,15 @@ body.libopen #lib{display:flex}
 .hs{fill:none!important;stroke-linecap:round;stroke-linejoin:round} .hs.s-txt,.hs.s-pin,.hs.s-val,.hs.s-ref{stroke:var(--pinc)} .hs.s-lbl{stroke:var(--txt)} .hs.s-note{stroke:var(--fg)} .hs.tb{stroke:#23262b} .hs.tb.cm{stroke:var(--txt,#006464)} .sel .hs{stroke:var(--sel)}
 @font-face{font-family:"Newstroke";src:url(fonts/newstroke.woff2) format("woff2");font-display:swap}
 .s-txt,.s-pin,.s-val,.s-ref,.s-lbl,.s-note,.tb{font-family:"Newstroke","Helvetica Neue",Arial,sans-serif!important;font-weight:400!important} .tb.b{font-weight:400!important}
+
+/* bigger sheet: Info panel is hidden until asked for; smaller chrome */
+#work{grid-template-columns:minmax(0,1fr)!important}
+#props{display:none;position:absolute;right:10px;top:10px;bottom:10px;width:250px;z-index:30;box-shadow:0 10px 34px rgba(0,0,0,.45);border:1px solid var(--line,#444);border-radius:8px;background:var(--panel,#161616);overflow:auto}
+body.propsopen #props{display:block}
+#top{padding:3px 8px;gap:5px} #top button{padding:4px 8px;font-size:12.5px}
+.hint{font-size:11px;padding:3px 8px;opacity:.75;top:6px;left:8px;max-width:46%}
+#status{font-size:11px;padding:2px 10px}
+.gridoff .gridfill{display:none}
+.tool.accent{background:#b4ff00;color:#000;font-weight:700}
+.s-txt,.s-pin,.s-val,.s-ref,.s-lbl,.s-note{stroke-width:.07px;paint-order:stroke;stroke-linejoin:round} .s-txt,.s-pin,.s-val,.s-ref{stroke:var(--pinc)} .s-lbl{stroke:var(--txt)} .s-note{stroke:var(--fg)} .sel .s-txt,.sel .s-ref,.sel .s-val,.sel .s-lbl,.sel .s-note{stroke:var(--sel)}
+.tb{stroke:#23262b;stroke-width:.05px}

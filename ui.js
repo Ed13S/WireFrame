@@ -22,7 +22,7 @@
   }
   function applyView() { const v = S.view; world.setAttribute('transform', `translate(${v.tx} ${v.ty}) scale(${v.sc})`);
     const g = v.sc >= 7 ? 1 : v.sc >= 3 ? 5 : 10; gridp.setAttribute('width', g); gridp.setAttribute('height', g); gridr.setAttribute('width', A.SHEET.w); gridr.setAttribute('height', A.SHEET.h);
-    const gs = S.gi || 0; gridr.style.display = gs === 2 ? 'none' : '';
+    const gs = S.gi || 0; svg.classList.toggle('gridoff', gs === 2); gridr.style.display = 'none';
     gridp.innerHTML = gs === 1 ? `<path d="M${g} 0H0V${g}" fill="none" stroke="var(--grid)" stroke-width=".04"/>` : `<circle cx="0" cy="0" r="${g === 1 ? .09 : .14 * g / 2}" fill="var(--grid)"/>`; $('#stZoom').textContent = Math.round(v.sc / 10 * 100) + '%'; }
   const GRIDS = [['Dots'], ['Lines'], ['Off']]; S.gi = 0;
   function cycleGrid() { S.gi = (S.gi + 1) % 3; try { localStorage.setItem('wf_grid', S.gi); } catch (e) {} applyView(); A.toast('Grid: ' + GRIDS[S.gi][0], 1200); }
@@ -81,6 +81,8 @@
   function overlapMenu(ids, x, y) { const old = $('#ovMenu'); if (old) old.remove(); const m = document.createElement('div'); m.id = 'ovMenu'; m.style.cssText = `left:${Math.min(x, innerWidth - 190)}px;top:${Math.min(y, innerHeight - 30 - ids.length * 28)}px`;
     m.innerHTML = '<div class="ovh">Select which item</div>' + ids.map(id => { const it = findItem(id) || {}; const nm = it.def ? (it.ref || '?') + ' (' + (it.def.name || it.def) + ')' : it.text !== undefined && it.p === undefined ? (it.size !== undefined || id[0] === 'n' ? 'Note: ' : 'Label: ') + it.text : it.p ? 'Wire' : id[0] === 'q' ? 'No-connect flag' : id; return `<button data-i="${id}">${esc ? esc(String(nm)) : nm}</button>`; }).join('');
     m.onclick = ev => { const b = ev.target.closest('button'); if (b) { S.sel = new Set([b.dataset.i]); m.remove(); renderProps(); A.render(); } }; document.body.appendChild(m); setTimeout(() => addEventListener('pointerdown', function f(ev) { if (!m.contains(ev.target)) { m.remove(); removeEventListener('pointerdown', f); } }), 0); }
+  function propsOpen(on) { document.body.classList.toggle('propsopen', on); } A.propsOpen = propsOpen;
+  $('#bProps').onclick = () => propsOpen(!document.body.classList.contains('propsopen')); $('#bPropsX').onclick = () => propsOpen(false);
   function libOpen(on) { document.body.classList.toggle('libopen', on); if (on) { const q = $('#q'); if (q) { q.focus(); q.select(); } } }
   A.libOpen = libOpen; $('#bAdd').onclick = () => libOpen(!document.body.classList.contains('libopen')); $('#bLibX').onclick = () => libOpen(false);
   $('#q').addEventListener('keydown', e => { if (e.key === 'Escape') { libOpen(false); svg.focus(); } });
@@ -187,14 +189,14 @@
     const startGrab = () => { if (!S.sel.size) return; const d = { type: 'move', x0: S.mouse.x, y0: S.mouse.y, last: [S.mouse.x, S.mouse.y], moved: false, clickId: null, orig: null, sticky: true }; startMove(d); S.drag = d; A.toast('Move: click to drop, Esc to cancel', 1800); };
     if (e.ctrlKey && k === 'home' || (e.shiftKey && k === 'home')) A.fitContent();
     else if (k === 'q') setTool('nc');
-    else if (k === 'a') { setTool('select'); libOpen(true); }
+    else if (k === 'a') { setTool('select'); libOpen(!document.body.classList.contains('libopen')); } else if (k === 'i') propsOpen(!document.body.classList.contains('propsopen'));
     else if (k === 'p') { const c = $$('#cats [data-cat]').find(b => b.dataset.cat === 'Power'); libOpen(true); if (c) c.click(); const q = $('#q'); if (q) { q.value = ''; q.focus(); } }
     else if (k === 'w') setTool('wire'); else if (k === 'l') setTool('label'); else if (k === 't') setTool('text'); else if (k === 'j') { setTool('wire'); A.toast('Junction dots appear automatically where wires meet or end on a wire', 2600); } else if (k === 's') setTool('select');
     else if (k === 'r') rotateSel(1); else if (k === 'x') { rotateSel(2); mirrorSel(); } else if (k === 'y') mirrorSel();
     else if (k === 'm' || k === 'g') startGrab();
     else if (k === 'c') { copySel(); paste(); startGrab(); }
-    else if (k === 'e') { const it = sel1(); if (it && it.def) focus('#pRef'); else if (it && it.text !== undefined) askText('Edit text', it.text, v => { it.text = v; A.commit(); }); else if (!it) A.sheetDialog && A.sheetDialog(); }
-    else if (k === 'v') focus('#pVal'); else if (k === 'u') focus('#pRef');
+    else if (k === 'e') { const it = sel1(); if (it && it.def) { propsOpen(true); focus('#pRef'); } else if (it && it.text !== undefined) askText('Edit text', it.text, v => { it.text = v; A.commit(); }); else if (!it) A.sheetDialog && A.sheetDialog(); }
+    else if (k === 'v') { propsOpen(true); focus('#pVal'); } else if (k === 'u') { propsOpen(true); focus('#pRef'); }
     else if (k === 'f' || k === 'home') A.fit(); else if (k === '?' || (e.shiftKey && k === '/')) A.shortcutsDialog && A.shortcutsDialog();
     else if (k === 'n' && S.tool === 'wire' && S.draft) finishWire();
     else if (k === 'n') cycleGrid();

@@ -77,7 +77,7 @@
   $('#bTheme').onclick = () => { th = themes[(themes.indexOf(th) + 1) % 3]; applyTheme(); }; applyTheme();
 
   /* ---------- checks ---------- */
-  A.runCheck = () => { const r = A.erc(); let simMsgs = [];
+  A.runCheck = () => { A.propsOpen && A.propsOpen(true); const r = A.erc(); let simMsgs = [];
     try { const Sm = A.Sim; if (Sm && !Sm.running && A.doc.parts.length) { Sm.build(); simMsgs = Sm.errors.map(t => ({ kind: 'bad', text: t })).concat(Sm.warnings.map(t => ({ kind: 'warn', text: t }))); } } catch (e) {}
     const seen = new Set(); const all = r.concat(simMsgs).filter(m => !seen.has(m.text) && seen.add(m.text)); all.sort((a, b) => (a.kind === 'bad' ? 0 : 1) - (b.kind === 'bad' ? 0 : 1));
     const box = $('#msgs'); S.marks = all.filter(x => x.x !== undefined).map(x => ({ x: x.x, y: x.y }));
