@@ -1,11 +1,32 @@
-MIT License
+WireFrame Source-Available Licence
 
-Copyright (c) 2026 WireFrame contributors
+Copyright (c) 2026 Ed13S (the "Owner"). All rights reserved.
 
-Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+1. Use. You may use the official copy of WireFrame, as published by the Owner (the
+   hosted web app, or the downloaded Mac app), for personal, school and educational use,
+   free of charge, exactly as provided.
 
-The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+2. No other rights. Except as stated in sections 1 and 3, you may NOT copy, modify,
+   adapt, translate, merge, publish, distribute, sublicense, sell, host, or create
+   derivative works of the source code, designs or documentation, in whole or in part,
+   and you may not remove or alter any notice, including the "WireFrame EDA" mark on
+   exported drawings.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+3. Suggestions and contributions. You may propose improvements to the Owner by opening a
+   pull request or issue on the official repository. By doing so you grant the Owner a
+   perpetual, worldwide, royalty-free, irrevocable licence to use, modify, relicense and
+   include your contribution in WireFrame. The Owner may accept or reject any
+   contribution at his sole discretion. Making a contribution does not give you any
+   rights in WireFrame itself. Making the copy needed to prepare a pull request is
+   permitted for that purpose only.
 
-The KiCad symbol libraries in /lib are converted from the official KiCad libraries and remain under their own licence (CC-BY-SA 4.0 with exception); see lib/LICENSE-KiCad-libraries.md.
+4. Third-party material. The KiCad symbol library data under lib/ is not covered by this
+   licence; it remains under its own licence (see lib/LICENSE-KiCad-libraries.md).
+   KiCad is a trademark of its respective owners; WireFrame is not affiliated with it.
+
+5. Your own work. Circuits, schematics and files you create with WireFrame belong to you.
+
+6. No warranty. WireFrame is provided "as is", without warranty of any kind. The Owner is
+   not liable for any damages arising from its use. Verify any circuit before building it.
+
+7. Termination. These permissions end automatically if you breach this licence.

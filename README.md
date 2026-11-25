@@ -31,4 +31,4 @@ Press Play. Click switches and buttons. Supports resistors, capacitors, inductor
 Parts live in `parts.js`/`parts_ic.js`; lesson circuits in `examples.js`. Pull requests welcome.
 
 ## Licence
-MIT for the app. KiCad libraries: see `lib/LICENSE-KiCad-libraries.md`.
+Source-available: free to use as provided, not to copy or modify; improvements are welcome as pull requests (see `LICENSE` and `CONTRIBUTING.md`). KiCad libraries: see `lib/LICENSE-KiCad-libraries.md`.

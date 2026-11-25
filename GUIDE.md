@@ -39,6 +39,16 @@ Open the live link in Chrome/Edge/Safari and use **Install app / Add to Dock / A
 2. Open Terminal, go into the project's `electron` folder, run `npm install`, then `npm start`.
 3. `npm run dist` builds the `.dmg` into `electron/dist`.
 
+### If the Mac says "WireFrame is damaged and can't be opened"
+The app is not signed with a paid Apple certificate, so macOS blocks the downloaded copy. It is not actually damaged. Drag it to Applications, then open Terminal and run:
+
+`xattr -cr /Applications/WireFrame.app`
+
+Then open it again (or right-click, Open, Open). Newer builds also carry a free ad-hoc signature, which helps on Apple Silicon.
+
+### Does the Mac app update itself?
+No. The Mac app is a snapshot made when you ran the build, so changing the repo does not change an installed copy. To update, run the **Build Mac app** workflow again and reinstall. The web version at your GitHub Pages address always updates when you push, so it is the easier one for students.
+
 ## 2. AI with your API key (the key never goes in the web page)
 Get a key at **openrouter.ai/keys** (it starts with `sk-or-`). Never paste it into `config.js`, `index.html` or anything on GitHub.
 
