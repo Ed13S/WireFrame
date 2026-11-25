@@ -181,3 +181,4 @@ body.libopen #lib{display:flex}
 #ovMenu .ovh{font-size:11px;opacity:.6;padding:3px 8px} #ovMenu button{text-align:left;background:transparent;border:0;color:inherit;padding:6px 8px;border-radius:4px;cursor:pointer;font:inherit;font-size:13px} #ovMenu button:hover{background:rgba(180,255,0,.18)}
 .s-txt,.s-pin,.s-val,.s-ref,.s-lbl,.s-note,.tb{font-family:"Helvetica Neue",Arial,"Segoe UI",sans-serif} .s-ref,.s-lbl{font-weight:400} .tb.cm{fill:var(--txt,#006464);font-size:1.9px}
 @media (max-width:900px){#lib{left:6px;right:6px;width:auto}}
+.hs{fill:none!important;stroke-linecap:round;stroke-linejoin:round} .hs.s-txt,.hs.s-pin,.hs.s-val,.hs.s-ref{stroke:var(--pinc)} .hs.s-lbl{stroke:var(--txt)} .hs.s-note{stroke:var(--fg)} .hs.tb{stroke:#23262b} .hs.tb.cm{stroke:var(--txt,#006464)} .sel .hs{stroke:var(--sel)}
