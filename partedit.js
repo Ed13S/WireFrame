@@ -54,12 +54,12 @@
     return rd(); }
   const str = v => v && v.s !== undefined ? v.s : v, find = (a, k) => a.find(x => Array.isArray(x) && x[0] === k), all = (a, k) => a.filter(x => Array.isArray(x) && x[0] === k);
   const q = v => Math.round(v / 1.27 * 2) / 2;
-  function symToDef(sym, lib, parents) {
+  function symToDef(sym, lib, parents, unit) { unit = unit || 1;
     const name = str(sym[1]); let body = sym; const props = {}; all(sym, 'property').forEach(p => props[str(p[1])] = str(p[2]));
     const parentName = find(sym, 'extends') && str(find(sym, 'extends')[1]), par = parentName && parents[parentName];
     const subs = all(sym, 'symbol').length ? sym : (par ? par.raw : sym); const pins = [], draw = []; const isPow = !!find(sym, 'power');
     all(subs, 'symbol').concat(subs === sym && !all(sym, 'symbol').length ? [sym] : []).forEach(sub => {
-      const m = /_(\d+)_(\d+)$/.exec(str(sub[1]) || ''); if (m && ((+m[1] !== 0 && +m[1] !== 1) || (+m[2] !== 0 && +m[2] !== 1))) return;
+      const m = /_(\d+)_(\d+)$/.exec(str(sub[1]) || ''); if (m && ((+m[1] !== 0 && +m[1] !== unit) || (+m[2] !== 0 && +m[2] !== 1))) return;
       const fillOf = s => { const f = find(s, 'fill'), t = f && find(f, 'type'); const v = t && t[1]; return v === 'background' ? 2 : v === 'outline' ? 1 : 0; };
       sub.forEach(it => { if (!Array.isArray(it)) return; const k = it[0];
         if (k === 'rectangle') { const a = find(it, 'start'), b = find(it, 'end'), x1 = q(+a[1]), y1 = -q(+a[2]), x2 = q(+b[1]), y2 = -q(+b[2]); draw.push({ t: 'r', p: [Math.min(x1, x2), Math.min(y1, y2), Math.abs(x2 - x1), Math.abs(y2 - y1)], f: fillOf(it) }); }
@@ -70,7 +70,7 @@
               const r = Math.hypot(x1 - ux, y1 - uy), ccw = ((x2 - x1) * (y3 - y2) - (y2 - y1) * (x3 - x2)) > 0; const a1 = Math.atan2(y1 - uy, x1 - ux), a3 = Math.atan2(y3 - uy, x3 - ux); let span = ccw ? a3 - a1 : a1 - a3; span = ((span % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
               draw.push({ t: 'd', d: `M${q(x1)} ${-q(y1)}A${q(r)} ${q(r)} 0 ${span > Math.PI ? 1 : 0} ${ccw ? 0 : 1} ${q(x3)} ${-q(y3)}`, f: fillOf(it) }); } } }
         else if (k === 'text') { const at = find(it, 'at'); draw.push({ t: 'x', p: [q(+at[1]), -q(+at[2])], s: str(it[1]), a: 'm', z: 1 }); }
-        else if (k === 'pin') { const at = find(it, 'at'), len = +find(it, 'length')[1], ang = +at[3] || 0, nm = str(find(it, 'name')[1]), num = str(find(it, 'number')[1]), hid = it.includes('hide') || (find(it, 'hide') && find(it, 'hide')[1] !== 'no'); if (hid) return;
+        else if (k === 'pin') { const at = find(it, 'at'), len = +find(it, 'length')[1], ang = +at[3] || 0, nm = str(find(it, 'name')[1]), num = str(find(it, 'number')[1]), hid = it.includes('hide') || (find(it, 'hide') && find(it, 'hide')[1] !== 'no'); if (hid && !isPow) return;
           const px = q(+at[1]), py = -q(+at[2]), L = q(len), dx = Math.round(Math.cos(ang * Math.PI / 180)) * L, dy = -Math.round(Math.sin(ang * Math.PI / 180)) * L; const name = nm === '~' ? '' : nm;
           pins.push({ n: num, name, x: px, y: py }); draw.push({ t: 'l', p: [px, py, px + dx, py + dy] });
           if (name) { const dir = dx > 0 ? 'R' : dx < 0 ? 'L' : dy < 0 ? 'U' : 'D', tx = px + dx + (dx > 0 ? .8 : dx < 0 ? -.8 : 0), ty = py + dy + (dy > 0 ? .8 : dy < 0 ? -.8 : 0);

@@ -99,7 +99,7 @@ const App = window.App = {
       if (n.pins.length === 0 && n.powerPins.length === 1 && !n.wires.length) res.push({ kind: 'bad', text: `Power symbol ${n.name} is not connected to anything`, x: n.powerPins[0].x, y: n.powerPins[0].y });
     });
     const refs = {}; A.doc.parts.forEach(p => { if ((p.ref || '').startsWith('#')) return; (refs[p.ref] = refs[p.ref] || []).push(p); });
-    Object.keys(refs).forEach(r => { if (refs[r].length > 1) res.push({ kind: 'bad', text: `Reference ${r} is used ${refs[r].length} times`, x: refs[r][0].x, y: refs[r][0].y }); });
+    Object.keys(refs).forEach(r => { if (refs[r].length > 1 && new Set(refs[r].map(p => String(p.def).replace(/#\d+$/, ''))).size === 1 && refs[r].some(p => /#\d+$/.test(p.def))) return; if (refs[r].length > 1) res.push({ kind: 'bad', text: `Reference ${r} is used ${refs[r].length} times`, x: refs[r][0].x, y: refs[r][0].y }); });
     /* ---- extra checks ---- */
     const d = A.doc, isGnd = n => /^(GND|AGND|DGND|PGND|VSS|0V)$/i.test(n || '');
     const lblPos = t => { const l = d.labels.find(x => x.text === t); return l ? { x: l.x, y: l.y } : { x: 0, y: 0 }; };
