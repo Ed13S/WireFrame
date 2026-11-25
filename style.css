@@ -193,6 +193,6 @@ body.propsopen #props{display:block}
 .hint{font-size:11px;padding:3px 8px;opacity:.75;top:6px;left:8px;max-width:46%}
 #status{font-size:11px;padding:2px 10px}
 .gridoff .gridfill{display:none}
-.tool.accent{background:#b4ff00;color:#000;font-weight:700}
+#bAdd.accent{background:#b4ff00;color:#000;font-weight:700}
 .s-txt,.s-pin,.s-val,.s-ref,.s-lbl,.s-note{stroke-width:.07px;paint-order:stroke;stroke-linejoin:round} .s-txt,.s-pin,.s-val,.s-ref{stroke:var(--pinc)} .s-lbl{stroke:var(--txt)} .s-note{stroke:var(--fg)} .sel .s-txt,.sel .s-ref,.sel .s-val,.sel .s-lbl,.sel .s-note{stroke:var(--sel)}
 .tb{stroke:#23262b;stroke-width:.05px}
