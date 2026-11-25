@@ -138,6 +138,7 @@ ${q}`;
     const ph = { circuit: 'e.g. A 555 timer astable flashing an LED about once per second, powered from 9 V', part: 'e.g. LM317T adjustable voltage regulator in a TO-220 package', ask: 'e.g. Why is my transistor never switching on?' };
     host.innerHTML = `<div class="back"><div class="modal"><header><b>AI Assistant</b><button id="aiX" class="small">Close</button></header><div class="mb">
       <div class="tabs"><button data-k="circuit">Make a circuit</button><button data-k="part">Make a part</button><button data-k="ask">Ask about this circuit</button></div>
+      <div id="aiKey" class="note" hidden></div>
       <textarea id="aiText" rows="4" placeholder=""></textarea>
       <label id="aiModRow" class="note"><input type="checkbox" id="aiMod" ${hasDoc ? '' : 'disabled'}> Change the circuit that is on the sheet now (otherwise the sheet is replaced${hasDoc ? '; Undo brings it back' : ''})</label>
       <div id="aiPaste" ${mode === 'paste' ? '' : 'hidden'}><p class="note">No AI server is connected, so this works by copy and paste with any Claude chat: 1) press Copy request, 2) paste it into Claude, 3) paste Claude’s reply below and press Build.</p>
@@ -145,6 +146,11 @@ ${q}`;
       <div id="aiOut" class="note"></div></div>
       <footer>${mode === 'paste' ? '<button id="aiCopy">Copy request</button><button id="aiBuild" class="accent">Build from reply</button>' : '<button id="aiGo" class="accent">Generate</button>'}</footer></div></div>`;
     const setKind = k => { kind = k; host.querySelectorAll('.tabs button').forEach(b => b.classList.toggle('on', b.dataset.k === k)); $('#aiText').placeholder = ph[k]; $('#aiModRow').hidden = k !== 'circuit'; if (mode === 'paste') $('#aiBuild').textContent = k === 'ask' ? 'Show answer' : 'Build from reply'; if (mode !== 'paste') $('#aiGo').textContent = k === 'ask' ? 'Ask' : 'Generate'; };
+    if (window.electronAI && window.electronAI.hasKey) { const kb = $('#aiKey'); const draw = async (edit) => { const has = await window.electronAI.hasKey(); kb.hidden = false;
+        kb.innerHTML = has && !edit ? 'AI key saved on this Mac. <a href="#" id="aiKeyChange">Change or remove</a>' : `<b>${has ? 'Change key' : 'First time only'}:</b> paste your OpenRouter key (it starts with sk-or-). It is stored encrypted on this Mac and only used to ask OpenRouter. <a href="https://openrouter.ai/keys" target="_blank">Get a key</a><div style="display:flex;gap:6px;margin-top:6px"><input id="aiKeyIn" type="password" placeholder="sk-or-..." autocomplete="off" style="flex:1"><button id="aiKeySave" class="accent">Save key</button>${has ? '<button id="aiKeyDel">Remove key</button>' : ''}</div>`;
+        const ch = $('#aiKeyChange'); if (ch) ch.onclick = e => { e.preventDefault(); draw(true); };
+        const sv = $('#aiKeySave'); if (sv) { const go = async () => { try { await window.electronAI.setKey($('#aiKeyIn').value); A.toast('AI key saved'); draw(false); } catch (e) { $('#aiOut').textContent = e.message.replace(/^Error invoking remote method '[^']*': (Error: )?/, ''); } }; sv.onclick = go; $('#aiKeyIn').onkeydown = e => { e.stopPropagation(); if (e.key === 'Enter') go(); }; }
+        const dl = $('#aiKeyDel'); if (dl) dl.onclick = async () => { await window.electronAI.clearKey(); draw(false); }; }; draw(false); }
     host.querySelectorAll('.tabs button').forEach(b => b.onclick = () => setKind(b.dataset.k)); setKind(kind); $('#aiX').onclick = () => host.innerHTML = ''; $('#aiText').focus();
     const promptNow = () => { const t = $('#aiText').value.trim(); if (!t) { $('#aiOut').textContent = 'Describe what you want first.'; return null; }
       return kind === 'circuit' ? A.circuitPrompt(t, $('#aiMod').checked && hasDoc ? A.docToSpec() : null) : kind === 'part' ? A.partPrompt(t) : A.askPrompt(t); };
@@ -158,7 +164,7 @@ ${q}`;
     if (mode === 'paste') { $('#aiCopy').onclick = async () => { const p = promptNow(); if (!p) return; try { await navigator.clipboard.writeText(p); $('#aiOut').textContent = 'Request copied (' + Math.round(p.length / 1000) + ' KB). Paste it into Claude.'; } catch (e) { const ta = $('#aiReply'); ta.value = p; ta.select(); $('#aiOut').textContent = 'Copy was blocked, so the request is in the box below. Copy it from there.'; } };
       $('#aiBuild').onclick = () => { const r = $('#aiReply').value.trim(); if (!r) { $('#aiOut').textContent = 'Paste Claude’s reply first.'; return; } finish(r); }; }
     else $('#aiGo').onclick = async () => { const p = promptNow(); if (!p) return; const b = $('#aiGo'); b.disabled = true; $('#aiOut').innerHTML = '<span class="spin"></span>Thinking… this can take up to a minute.';
-      try { await finish(await A.aiAsk(p, kind)); } catch (e) { $('#aiOut').textContent = 'The AI request failed: ' + e.message; } b.disabled = false; };
+      try { await finish(await A.aiAsk(p, kind)); } catch (e) { $('#aiOut').textContent = 'The AI request failed: ' + e.message.replace(/^Error invoking remote method '[^']*': (Error: )?/, ''); } b.disabled = false; };
   };
   $('#bAI').onclick = () => A.aiDialog();
 
