@@ -1,7 +1,7 @@
 // Tiny AI proxy for WireFrame. Holds the API key as an environment variable so users never see or paste one.
 // Deploy free on Render (Web Service, Node). Set OPENROUTER_API_KEY (and optionally MODEL, e.g. a free model) and optionally ALLOWED_ORIGIN.
 const http = require('http');
-const KEY = process.env.OPENROUTER_API_KEY, ORIGIN = process.env.ALLOWED_ORIGIN || '*', MODEL = process.env.MODEL || 'anthropic/claude-sonnet-4.5';
+const KEY = process.env.OPENROUTER_API_KEY, ORIGIN = process.env.ALLOWED_ORIGIN || '*', MODEL = process.env.MODEL || 'openrouter/free';
 const hits = new Map(); // crude per-IP rate limit: 20 requests / 10 min
 const ok = ip => { const n = Date.now(), a = (hits.get(ip) || []).filter(t => n - t < 6e5); a.push(n); hits.set(ip, a); return a.length <= 20; };
 http.createServer(async (req, res) => {
