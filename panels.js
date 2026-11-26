@@ -46,14 +46,14 @@
   A.openText = (text, name) => { try { const o = JSON.parse(text);
       if (Array.isArray(o) || (o.pins && o.draw)) { const arr = Array.isArray(o) ? o : [o]; arr.forEach(p => { if (p.pins && p.draw) A.addCustom(p); }); A.refreshLib(); A.toast('Imported ' + arr.length + ' part(s) into My parts'); return; }
       A.importDoc(o); A.toast('Opened ' + (name || 'sheet')); } catch (e) { A.toast('That file is not a WireFrame sheet'); } };
-  async function toPNG(scale, sheet, bg) { const svg = A.exportSVG(sheet ? {} : { tight: true, bg: !!bg }); const img = new Image(); const url = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+  async function toPNG(scale, sheet, bg, clip) { const svg = A.exportSVG(sheet ? { clip } : { tight: true, bg: !!bg, clip }); const img = new Image(); const url = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
     await new Promise((res, rej) => { img.onload = res; img.onerror = rej; img.src = url; }); const c = document.createElement('canvas'); c.width = img.width * scale / 1; c.height = img.height * scale; const x = c.getContext('2d'); x.scale(scale, scale); x.drawImage(img, 0, 0);
     return new Promise(r => c.toBlob(r, 'image/png')); }
   const acts = {
     new() { if (A.doc.parts.length && !confirm('Start a new sheet? Unsaved changes will be lost (your parts library is kept).')) return; A.doc = A.newDoc(); A.hist = []; A.fut = []; A.commit(); A.emit('load'); },
     open() { $('#fileIn').click(); }, save() { A.saveFile(); },
     async png() { try { A.download(base() + '.png', await toPNG(2), 'image/png'); } catch (e) { A.toast('PNG export failed in this browser; try SVG'); } },
-    async copyimg() { try { const b = await toPNG(2, false, true); await navigator.clipboard.write([new ClipboardItem({ 'image/png': b })]); A.toast('Copied picture to clipboard'); } catch (e) { A.toast('Clipboard blocked here; use Export PNG'); } },
+    async copyimg() { try { const b = await toPNG(2, false, false, true); await navigator.clipboard.write([new ClipboardItem({ 'image/png': b })]); A.toast('Copied picture to clipboard'); } catch (e) { A.toast('Clipboard blocked here; use Export PNG'); } },
     async copysvg() { try { await navigator.clipboard.writeText(A.exportSVG({ tight: true })); A.toast('Copied SVG to clipboard'); } catch (e) { A.toast('Clipboard blocked here; use Export SVG'); } },
     async pngsheet() { try { A.download(base() + '-sheet.png', await toPNG(2, true), 'image/png'); } catch (e) { A.toast('PNG export failed'); } },
     keys() { A.shortcutsDialog(); },

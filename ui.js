@@ -189,8 +189,8 @@
     const startGrab = () => { if (!S.sel.size) return; const d = { type: 'move', x0: S.mouse.x, y0: S.mouse.y, last: [S.mouse.x, S.mouse.y], moved: false, clickId: null, orig: null, sticky: true }; startMove(d); S.drag = d; A.toast('Move: click to drop, Esc to cancel', 1800); };
     if (e.ctrlKey && k === 'home' || (e.shiftKey && k === 'home')) A.fitContent();
     else if (k === 'q') setTool('nc');
-    else if (k === 'a') { setTool('select'); libOpen(!document.body.classList.contains('libopen')); } else if (k === 'i') propsOpen(!document.body.classList.contains('propsopen'));
-    else if (k === 'p') { const c = $$('#cats [data-cat]').find(b => b.dataset.cat === 'Power'); libOpen(true); if (c) c.click(); const q = $('#q'); if (q) { q.value = ''; q.focus(); } }
+    else if (k === 'a') { e.preventDefault(); setTool('select'); libOpen(!document.body.classList.contains('libopen')); } else if (k === 'i') propsOpen(!document.body.classList.contains('propsopen'));
+    else if (k === 'p') { e.preventDefault(); const c = $$('#cats [data-cat]').find(b => b.dataset.cat === 'Power'); libOpen(true); if (c) c.click(); const q = $('#q'); if (q) { q.value = ''; q.focus(); } }
     else if (k === 'w') setTool('wire'); else if (k === 'l') setTool('label'); else if (k === 't') setTool('text'); else if (k === 'j') { setTool('wire'); A.toast('Junction dots appear automatically where wires meet or end on a wire', 2600); } else if (k === 's') setTool('select');
     else if (k === 'r') rotateSel(1); else if (k === 'x') { rotateSel(2); mirrorSel(); } else if (k === 'y') mirrorSel();
     else if (k === 'm' || k === 'g') startGrab();

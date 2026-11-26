@@ -84,12 +84,14 @@
   };
   // standalone SVG string (export / thumbnails); fixed light colours so it prints well
   A.CSS_EXPORT = `.s-line{stroke:#8a1c1c;fill:none;stroke-width:.15;stroke-linecap:round;stroke-linejoin:round}.s-fill{fill:#fff8c4}.s-solid{fill:#8a1c1c}.s-none{fill:none}.s-txt{fill:#0f6f7a}.s-pin{fill:#0f6f7a}.s-ref{fill:#0f6f7a;font-weight:600}.s-val{fill:#0f6f7a}.s-lbl{fill:#1d4f91;font-weight:600}.s-note{fill:#23262b}.wire{stroke:#0a7a2f;stroke-width:.16;stroke-linecap:round}.junc{fill:#0a7a2f}.lblline{stroke:#1d4f91;stroke-width:.12}.lblpt{fill:#1d4f91}.hit,.hitw{display:none}.paper{fill:#fbfaf5}.frame{fill:none;stroke:#8a1c1c;stroke-width:.2}.tb{fill:#23262b}.tbhit{display:none}.tb.cm{fill:#1d4f91}.tb.b{font-weight:700}.tb.i{font-style:italic}.hs{fill:none!important;stroke-linecap:round;stroke-linejoin:round}.hs.s-txt,.hs.s-pin,.hs.s-val,.hs.s-ref{stroke:#0f6f7a}.hs.s-lbl{stroke:#1d4f91}.hs.s-note,.hs.tb{stroke:#23262b}.hs.tb.cm{stroke:#1d4f91}text{font-family:Inter,Arial,sans-serif}`;
+  /* Picture for pasting into Word/Docs: transparent background, mid-tone colours that stay clear on both white and dark pages. */
+  const clipPal = c => c.replace(/#8a1c1c/g, '#d84545').replace(/#0a7a2f/g, '#1fb04a').replace(/#0f6f7a/g, '#22b3c1').replace(/#1d4f91/g, '#5b95f0').replace(/#23262b/g, '#9aa0aa').replace(/stroke-width:\.16;/, 'stroke-width:.2;');
   A.exportSVG = (opts) => { opts = opts || {}; const d = A.doc; let x0 = 0, y0 = 0, x1 = A.SHEET.w, y1 = A.SHEET.h;
     if (opts.tight) { x0 = y0 = 1e9; x1 = y1 = -1e9; const add = (x, y) => { x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x); y1 = Math.max(y1, y); };
       d.parts.forEach(i => { const b = A.worldBBox(i); add(b.x0 - 2, b.y0 - 3); add(b.x1 + 2, b.y1 + 3); }); d.wires.forEach(w => { add(w.p[0], w.p[1]); add(w.p[2], w.p[3]); }); d.labels.forEach(l => { add(l.x, l.y - 2); add(l.x + l.text.length + 2, l.y); }); d.notes.forEach(n => { add(n.x, n.y - 2); add(n.x + n.text.length * 1.2, n.y + 2); });
       if (x0 > x1) { x0 = 0; y0 = 0; x1 = 40; y1 = 30; } x0 -= 3; y0 -= 3; x1 += 3; y1 += 3; }
     const w = x1 - x0, h = y1 - y0;
-    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${x0} ${y0} ${w} ${h}" width="${Math.round(w * 10)}" height="${Math.round(h * 10)}"><style>${A.CSS_EXPORT}</style>${opts.bg ? `<rect x="${x0}" y="${y0}" width="${w}" height="${h}" fill="#fbfaf5"/>` : ''}${A.worldSVG({ sheet: !opts.tight })}</svg>`; };
+    return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${x0} ${y0} ${w} ${h}" width="${Math.round(w * 10)}" height="${Math.round(h * 10)}"><style>${opts.clip ? clipPal(A.CSS_EXPORT) : A.CSS_EXPORT}</style>${opts.bg ? `<rect x="${x0}" y="${y0}" width="${w}" height="${h}" fill="#fbfaf5"/>` : ''}${A.worldSVG({ sheet: !opts.tight })}</svg>`; };
   A.thumb = (def) => { const b = A.bbox(def), pad = 1.5, w = b.x1 - b.x0 + pad * 2, h = b.y1 - b.y0 + pad * 2;
     return `<svg viewBox="${b.x0 - pad} ${b.y0 - pad} ${w} ${h}" preserveAspectRatio="xMidYMid meet" aria-hidden="true">${A.symbolInner(def, null)}</svg>`; };
 })();
