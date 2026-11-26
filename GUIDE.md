@@ -46,6 +46,8 @@ The app is not signed with a paid Apple certificate, so macOS blocks the downloa
 
 Then open it again (or right-click, Open, Open). Newer builds also carry a free ad-hoc signature, which helps on Apple Silicon.
 
+If you see "Apple could not verify WireFrame is free of malware": open **System Settings, Privacy & Security**, scroll down to the message about WireFrame, click **Open Anyway** and enter your password. You only do this once. Removing the warning for good needs a paid Apple Developer ID.
+
 ### Does the Mac app update itself?
 No. The Mac app is a snapshot made when you ran the build, so changing the repo does not change an installed copy. To update, run the **Build Mac app** workflow again and reinstall. The web version at your GitHub Pages address always updates when you push, so it is the easier one for students.
 
