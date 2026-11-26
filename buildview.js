@@ -71,12 +71,28 @@
   function supSVG(s) { return `<g data-s="${s.id}" class="bsup${V.sel.has('s:' + s.id) ? ' sel' : ''}"><rect x="${s.x - .5}" y="${s.y - 3.7}" width="3.4" height="3.6" rx=".35" fill="#2b2b2f" stroke="#000" stroke-width=".06"/><rect x="${s.x - .5}" y="${s.y - 3.7}" width="3.4" height="1" fill="#d4af37"/><text x="${s.x + 1.2}" y="${s.y - 1.5}" font-size=".7" fill="#fff" text-anchor="middle" dominant-baseline="central" class="bt">${s.volts} V</text><text x="${s.x + 1.2}" y="${s.y - 2.7}" font-size=".42" fill="#222" text-anchor="middle" dominant-baseline="central" class="bt">BATTERY</text>` +
     `<circle cx="${s.x}" cy="${s.y}" r=".3" fill="#d33"/><text x="${s.x}" y="${s.y + .8}" font-size=".5" fill="#d33" text-anchor="middle" class="bt">+</text><circle cx="${s.x + 2}" cy="${s.y}" r=".3" fill="#222"/><text x="${s.x + 2}" y="${s.y + .8}" font-size=".5" fill="#222" text-anchor="middle" class="bt">−</text></g>`; }
   function jumperPath(a, b) { const dx = b[0] - a[0], dy = b[1] - a[1], L = Math.hypot(dx, dy); if (L < .01) return `M${a[0]} ${a[1]}`; const lift = Math.min(3.2, .5 + L * .22), mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2, nx = -dy / L, ny = dx / L, s = (ny > 0 ? -1 : 1) * 1; return `M${a[0]} ${a[1]}Q${(mx + nx * lift * s).toFixed(2)} ${(my + ny * lift * s).toFixed(2)} ${b[0]} ${b[1]}`; }
+  /* bendable jumpers: j.via = [[x,y],...] gives a polyline with rounded corners; no j.via = the old arc */
+  B.jPts = (j, r) => { const P = [j.a, ...(j.via || []), j.b], out = [P[0]]; r = r == null ? .5 : r;
+    for (let i = 1; i < P.length - 1; i++) { const p = P[i], u = [P[i - 1][0] - p[0], P[i - 1][1] - p[1]], w = [P[i + 1][0] - p[0], P[i + 1][1] - p[1]], lu = Math.hypot(...u), lw = Math.hypot(...w); if (lu < .01 || lw < .01) { out.push(p); continue; }
+      const rr = Math.min(r, lu / 2, lw / 2), p1 = [p[0] + u[0] / lu * rr, p[1] + u[1] / lu * rr], p2 = [p[0] + w[0] / lw * rr, p[1] + w[1] / lw * rr]; for (let k = 0; k <= 6; k++) { const t = k / 6, q = 1 - t; out.push([q * q * p1[0] + 2 * q * t * p[0] + t * t * p2[0], q * q * p1[1] + 2 * q * t * p[1] + t * t * p2[1]]); } }
+    out.push(P[P.length - 1]); return out; };
+  const jPath = j => j.via ? 'M' + B.jPts(j).map(p => p[0].toFixed(2) + ' ' + p[1].toFixed(2)).join('L') : jumperPath(j.a, j.b);
+  B.jPath = jPath;
+  const segHit = (p, q, ex) => { const L = Math.hypot(q[0] - p[0], q[1] - p[1]), n = Math.max(2, Math.ceil(L * 4)); for (let k = 0; k <= n; k++) { const t = k / n, x = p[0] + (q[0] - p[0]) * t, y = p[1] + (q[1] - p[1]) * t; if (B.insts().some(i => { if (!i.bb || ex.has(i.id)) return false; const b = B.bbox(i); return x > b.x0 + .05 && x < b.x1 - .05 && y > b.y0 + .05 && y < b.y1 - .05; })) return true; } return false; };
+  B.autoRoute = j => { const ex = new Set(); B.insts().forEach(i => { if (!i.bb) return; const L = B.legPos(i); [j.a, j.b].forEach(p => { if (L.some(l => l.x === p[0] && l.y === p[1])) ex.add(i.id); }); });
+    const a = j.a, b = j.b, cands = [[], [[a[0], b[1]]], [[b[0], a[1]]]]; for (let k = 1; k <= 16; k++) [k, -k].forEach(o => { cands.push([[a[0], a[1] + o], [b[0], a[1] + o]], [[a[0] + o, a[1]], [a[0] + o, b[1]]]); });
+    let best = null, bl = 1e9; cands.forEach(v => { const P = [a, ...v, b]; let ok = true, L = 0; for (let i = 0; i < P.length - 1 && ok; i++) { if (segHit(P[i], P[i + 1], ex)) ok = false; L += Math.hypot(P[i + 1][0] - P[i][0], P[i + 1][1] - P[i][1]); } if (ok && L < bl - .01) { bl = L; best = v; } });
+    if (best) j.via = best.map(p => p.slice()); else delete j.via; return !!best; };
+  A.tidyWires = () => { const w = A.doc.bw || []; let n = 0; w.forEach(j => { if (B.autoRoute(j)) n++; }); A.doc.master = 'build'; A.commit(); A.toast('Tidied ' + w.length + ' wire' + (w.length === 1 ? '' : 's') + (n < w.length ? ' (' + (w.length - n) + ' had no clear path and keep their arc)' : ''), 2600); };
   const JC = ['#2f6fdd', '#f2c200', '#2fa84f', '#ff8a1f', '#9b4fd0', '#19b5c9'];
   B.jcolor = (j, n) => j.color || JC[n % JC.length];
-  function wiresSVG() { let o = ''; (A.doc.bw || []).forEach((j, i) => { const c = B.jcolor(j, i), sel = V.sel.has('j:' + j.id), d = jumperPath(j.a, j.b); const lv = V.live && V.live.vj && V.live.vj[j.id];
+  function wiresSVG() { let o = ''; (A.doc.bw || []).forEach((j, i) => { const c = B.jcolor(j, i), sel = V.sel.has('j:' + j.id), d = jPath(j); const lv = V.live && V.live.vj && V.live.vj[j.id];
       o += `<g data-j="${j.id}"><path d="${d}" stroke="transparent" stroke-width="1" fill="none" class="hitj"/>${sel ? `<path d="${d}" stroke="#fff" stroke-width=".6" fill="none" opacity=".9"/>` : ''}<path d="${d}" stroke="#0004" stroke-width=".46" fill="none" transform="translate(.08 .1)"/><path d="${d}" stroke="${c}" stroke-width=".36" fill="none" stroke-linecap="round"/>` +
         (lv ? `<path d="${d}" stroke="#fff" stroke-width=".12" fill="none" stroke-dasharray=".5 .9" stroke-dashoffset="${(-lv.ph).toFixed(2)}" opacity=".85"/>` : '') +
-        `<circle cx="${j.a[0]}" cy="${j.a[1]}" r=".27" fill="${c}" stroke="#0006" stroke-width=".06"/><circle cx="${j.b[0]}" cy="${j.b[1]}" r=".27" fill="${c}" stroke="#0006" stroke-width=".06"/></g>`; }); return o; }
+        `<circle cx="${j.a[0]}" cy="${j.a[1]}" r=".27" fill="${c}" stroke="#0006" stroke-width=".06"/><circle cx="${j.b[0]}" cy="${j.b[1]}" r=".27" fill="${c}" stroke="#0006" stroke-width=".06"/></g>`; });
+    (A.doc.bw || []).forEach(j => { if (!V.sel.has('j:' + j.id) || V.draft) return; const P = [j.a, ...(j.via || []), j.b]; o += `<g data-jh="${j.id}">`;
+      for (let i = 0; i < P.length - 1; i++) { const m = [(P[i][0] + P[i + 1][0]) / 2, (P[i][1] + P[i + 1][1]) / 2]; o += `<circle class="jm" data-i="${i}" cx="${m[0]}" cy="${m[1]}" r=".3" fill="#fff8" stroke="#d8731a" stroke-width=".08"/>`; }
+      (j.via || []).forEach((p, i) => o += `<circle class="jv" data-i="${i}" cx="${p[0]}" cy="${p[1]}" r=".38" fill="#fff" stroke="#d8731a" stroke-width=".14"/>`); o += '</g>'; }); return o; }
   B.draw = () => { drawBoard(); let p = ''; const live = V.live;
     (A.doc.bsup || []).forEach(s => p += supSVG(s));
     B.insts().forEach(inst => { if (!inst.bb) return; const bb = inst.bb, sel = V.sel.has(inst.id), lv = live ? live.of(inst) : null, bx = B.bbox(inst);
@@ -86,6 +102,7 @@
   function drawOver() { let o = ''; const [mx, my] = V.mouse;
     if (A.mode === 'build' && S.placing) { const df = A.def(S.placing); if (df) { const inst = { id: 'ghost', def: S.placing, ref: A.nextRef(df.ref || 'U'), value: df.value || df.name, bb: { x: mx, y: my, rot: V.rot } }; o += `<g opacity=".6" transform="translate(${mx} ${my}) rotate(${V.rot * 90})">${B.look(inst, null)}</g>`; } }
     if (V.draft) { const a = V.draft.a, b = V.mouse; o += `<path d="${jumperPath(a, b)}" stroke="#d8731a" stroke-width=".36" fill="none" stroke-linecap="round" opacity=".85"/><circle cx="${a[0]}" cy="${a[1]}" r=".3" fill="#d8731a"/>`; }
+    if (V.guide) { const g = V.guide; if (g.k === '90') o += `<path d="M${g.p[0] - 1.2} ${g.p[1]}H${g.p[0] + 1.2}M${g.p[0]} ${g.p[1] - 1.2}V${g.p[1] + 1.2}" stroke="#d8731a" stroke-width=".08"/><rect x="${g.p[0] - .45}" y="${g.p[1] - .45}" width=".9" height=".9" fill="none" stroke="#d8731a" stroke-width=".08"/>`; else o += `<path d="M${g.a[0]} ${g.a[1]}L${g.b[0]} ${g.b[1]}" stroke="#d8731a" stroke-width=".08" stroke-dasharray=".4 .3"/>`; }
     if (V.hover) o += `<circle cx="${V.hover[0]}" cy="${V.hover[1]}" r=".34" fill="none" stroke="#d8731a" stroke-width=".1"/>`;
     gOver.innerHTML = o; }
   let raf = 0; B.render = () => { cancelAnimationFrame(raf); raf = requestAnimationFrame(() => { if (A.mode === 'build') B.draw(); }); };
@@ -104,7 +121,8 @@
   A.bsel = () => V.sel; A.bjump = id => { const inst = A.doc.parts.find(p => p.id === id); if (!inst || !inst.bb) return; const b = B.bbox(inst), r = bsvg.getBoundingClientRect(), v = V.view, cx = (b.x0 + b.x1) / 2, cy = (b.y0 + b.y1) / 2; v.sc = Math.max(v.sc, 16); v.tx = r.width / 2 - cx * v.sc; v.ty = r.height / 2 - cy * v.sc; applyV(); B.render(); };
   A.bselect = (ids) => { V.sel = new Set(ids); S.sel = new Set([...V.sel].filter(k => !k.includes(':'))); A.renderProps && A.renderProps(); buildProps(); B.render(); };
   function buildProps() { const k = sel1(); if (A.mode !== 'build' || !k || !k.includes(':')) return; const b = $('#propBody');
-    if (k.startsWith('j:')) { const j = (A.doc.bw || []).find(x => 'j:' + x.id === k); if (!j) return; b.innerHTML = `<p><b>Jumper wire</b></p><div class="row"><label>Colour</label><span>${[...JC, '#d33', '#222', '#fff'].map(c => `<button class="swatch" data-c="${c}" style="background:${c}" aria-label="${c}"></button>`).join('')}</span></div><button id="bjDel" class="danger">Delete wire</button>`;
+    if (k.startsWith('j:')) { const j = (A.doc.bw || []).find(x => 'j:' + x.id === k); if (!j) return; b.innerHTML = `<p><b>Jumper wire</b></p><div class="row"><label>Colour</label><span>${[...JC, '#d33', '#222', '#fff'].map(c => `<button class="swatch" data-c="${c}" style="background:${c}" aria-label="${c}"></button>`).join('')}</span></div><p class="note">Drag the orange dots to bend the wire; a cross shows a 90° corner and a line a straight 180°. Double-click a corner to remove it.</p><div class="row"><button id="bjStr">Straight</button><button id="bjAuto">Auto-route</button><button id="bjArc">Arc</button></div><button id="bjDel" class="danger">Delete wire</button>`;
+      $('#bjStr').onclick = () => { j.via = []; A.doc.master = 'build'; A.commit(); }; $('#bjAuto').onclick = () => { if (!B.autoRoute(j)) A.toast('No clear path around the parts', 1800); A.doc.master = 'build'; A.commit(); }; $('#bjArc').onclick = () => { delete j.via; A.doc.master = 'build'; A.commit(); };
       b.querySelectorAll('.swatch').forEach(s => s.onclick = () => { j.color = s.dataset.c; A.commit(); }); $('#bjDel').onclick = bdelete; }
     else if (k.startsWith('s:')) { const s = (A.doc.bsup || []).find(x => 's:' + x.id === k); if (!s) return; b.innerHTML = `<p><b>Battery / supply</b></p><div class="row"><label>Volts</label><input id="bsV" value="${s.volts}"></div><p class="note">Its + terminal is red, − is black. Connect − to the blue rail.</p><button id="bsDel" class="danger">Delete</button>`;
       $('#bsV').onchange = e => { s.volts = Math.max(.1, +e.target.value || 5); A.commit(); }; $('#bsDel').onclick = bdelete; } }
@@ -116,6 +134,7 @@
     const [gx, gy] = toG(e.clientX, e.clientY), sp = snapPt(gx, gy); V.mouse = sp;
     if (V.draft) { finishJumper(sp); return; }
     if (S.tool === 'place' && S.placing) { const df = A.def(S.placing), inst = A.placePart(S.placing, 10 + A.doc.parts.length, 10, 0, 0); inst.bb = { x: sp[0], y: sp[1], rot: V.rot }; A.doc.master = 'build'; A.commit(); A.bselect([inst.id]); return; }
+    const hv = e.target.closest && e.target.closest('.jv,.jm'); if (hv) { const j = (A.doc.bw || []).find(x => x.id === hv.parentNode.dataset.jh); if (j) { let i = +hv.dataset.i; if (hv.classList.contains('jm')) { const P = [j.a, ...(j.via || []), j.b]; j.via = j.via || []; j.via.splice(i, 0, [Math.round((P[i][0] + P[i + 1][0]) ), Math.round((P[i][1] + P[i + 1][1]))].map(v => v / 2)); } V.drag = { type: 'via', j, i, moved: false }; return; } }
     const id = hitOf(e.target);
     if (id && S.tool !== 'wire') { if (A.simPointer && !id.includes(':') && A.simPointer(id, 'down')) return; if (!V.sel.has(id) && !e.shiftKey) A.bselect([id]); else if (e.shiftKey) { V.sel.has(id) ? V.sel.delete(id) : V.sel.add(id); A.bselect([...V.sel]); }
       if (!id.startsWith('j:')) V.drag = { type: 'move', x0: gx, y0: gy, moved: false, orig: null, id }; return; }
@@ -127,17 +146,22 @@
     const ra = c.find(B.target(a[0], a[1])); const has = (pre) => c.groups.some(gr => gr.some(k => k.startsWith(pre)) && c.find(gr[0]) === ra);
     const tag = c.groups.find(gr => c.find(gr[0]) === ra) || []; const sups = {}; (d.bsup || []).forEach(s => sups[s.id] = s);
     if (tag.some(k => k.startsWith('U:') && k.endsWith(':-'))) j.color = '#222'; else if (tag.some(k => k.startsWith('U:') && k.endsWith(':+'))) j.color = '#d33'; else j.color = JC[(d.bw.length - 1) % JC.length];
-    V.draft = null; d.master = 'build'; A.commit(); A.bselect(['j:' + j.id]); }
+    B.autoRoute(j); V.draft = null; d.master = 'build'; A.commit(); A.bselect(['j:' + j.id]); }
   bsvg.addEventListener('pointermove', e => { if (pan) { const dx = e.clientX - pan.x, dy = e.clientY - pan.y; if (Math.abs(dx) + Math.abs(dy) > 3) pan.moved = true; V.view.tx = pan.tx + dx; V.view.ty = pan.ty + dy; applyV(); return; }
     const [gx, gy] = toG(e.clientX, e.clientY); V.mouse = snapPt(gx, gy); V.hover = (!V.drag && onHole(V.mouse) && (S.tool === 'wire' || V.draft || true)) ? V.mouse : null; $('#stPos').textContent = V.mouse.join(', ');
-    const d = V.drag; if (d && d.type === 'move') { if (!d.moved && Math.abs(gx - d.x0) + Math.abs(gy - d.y0) < .5) return; if (!d.orig) { d.orig = []; V.sel.forEach(k => { const p = A.doc.parts.find(x => x.id === k); if (p && p.bb) d.orig.push([p.bb, p.bb.x, p.bb.y]); const s = (A.doc.bsup || []).find(x => 's:' + x.id === k); if (s) d.orig.push([s, s.x, s.y]); }); }
+    const d = V.drag; if (d && d.type === 'via') { d.moved = true; const j = d.j, P = [j.a, ...j.via, j.b], pv = P[d.i], nx = P[d.i + 2]; let x = Math.round(gx * 2) / 2, y = Math.round(gy * 2) / 2; V.guide = null;
+      const c1 = [pv[0], nx[1]], c2 = [nx[0], pv[1]], dd = c => Math.hypot(c[0] - gx, c[1] - gy), cs = [c1, c2].sort((p, q) => dd(p) - dd(q))[0];
+      const ux = nx[0] - pv[0], uy = nx[1] - pv[1], L2 = ux * ux + uy * uy, t = L2 ? ((gx - pv[0]) * ux + (gy - pv[1]) * uy) / L2 : 0, pr = [pv[0] + ux * t, pv[1] + uy * t];
+      if (dd(cs) < .7) { [x, y] = cs; V.guide = { k: '90', p: cs }; } else if (L2 && Math.hypot(pr[0] - gx, pr[1] - gy) < .5 && t > 0 && t < 1) { [x, y] = pr; V.guide = { k: '180', a: pv, b: nx }; }
+      j.via[d.i] = [x, y]; B.render(); return; }
+    if (d && d.type === 'move') { if (!d.moved && Math.abs(gx - d.x0) + Math.abs(gy - d.y0) < .5) return; if (!d.orig) { d.orig = []; V.sel.forEach(k => { const p = A.doc.parts.find(x => x.id === k); if (p && p.bb) d.orig.push([p.bb, p.bb.x, p.bb.y]); const s = (A.doc.bsup || []).find(x => 's:' + x.id === k); if (s) d.orig.push([s, s.x, s.y]); }); }
       d.moved = true; const dx = Math.round(gx - d.x0), dy = Math.round(gy - d.y0); d.orig.forEach(([o, x, y]) => { o.x = x + dx; o.y = y + dy; }); B.render(); return; }
     drawOver(); });
   bsvg.addEventListener('pointerup', e => { if (pan) { const was = pan; pan = null; if (was.right && !was.moved && !V.draft && !S.placing) A.ctxShow(e, 'build'); return; } if (A.simPointer) A.simPointer(null, 'up');
     if (V.draft && V.draft.drag && Math.hypot(e.clientX - V.draft.x0, e.clientY - V.draft.y0) > 6) { const [gx, gy] = toG(e.clientX, e.clientY); finishJumper(snapPt(gx, gy)); }
     else if (V.draft && V.draft.drag) { V.draft.drag = false; }
-    const d = V.drag; V.drag = null; if (d && d.moved) { A.doc.master = 'build'; A.commit(); } });
-  bsvg.addEventListener('dblclick', e => { const id = hitOf(e.target); if (id && !id.includes(':')) { const i = $('#pVal'); if (i) { i.focus(); i.select(); } } });
+    const d = V.drag; V.drag = null; V.guide = null; if (d && d.moved) { A.doc.master = 'build'; A.commit(); } });
+  bsvg.addEventListener('dblclick', e => { const hv = e.target.closest && e.target.closest('.jv'); if (hv) { const j = (A.doc.bw || []).find(x => x.id === hv.parentNode.dataset.jh); if (j) { j.via.splice(+hv.dataset.i, 1); A.doc.master = 'build'; A.commit(); } return; } const id = hitOf(e.target); if (id && !id.includes(':')) { const i = $('#pVal'); if (i) { i.focus(); i.select(); } } });
   A.buildKey = (e, k) => { if (A.mode !== 'build') return false;
     if (k === 'escape') { if (V.draft) V.draft = null; else if (S.placing || S.tool !== 'select') A.setTool('select'); else A.bselect([]); B.render(); return true; }
     if (k === 'delete' || k === 'backspace') { e.preventDefault(); bdelete(); return true; }
