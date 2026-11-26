@@ -54,7 +54,7 @@
     const mk = () => { const n = $('#pjName').value.trim() || 'Untitled project'; P.newProject(n); h.innerHTML = ''; }; $('#pjNew').onclick = mk; $('#pjName').onkeydown = e => { if (e.key === 'Enter') mk(); e.stopPropagation(); };
     h.querySelectorAll('.pjcard[data-id]').forEach(r => r.onclick = e => { const b = e.target.closest('[data-a]'); if (!b) return; const id = r.dataset.id, a = b.dataset.a;
       if (a === 'open') { P.open(id); h.innerHTML = ''; } else if (a === 'dup') { P.duplicate(id); draw(); }
-      else if (a === 'ren') { const nm = prompt('Project name', P.list().find(x => x.id === id).name); if (nm && nm.trim()) { P.rename(id, nm.trim()); draw(); } }
+      else if (a === 'ren') { A.askText('Project name', P.list().find(x => x.id === id).name, nm => { if (nm && nm.trim()) { P.rename(id, nm.trim()); draw(); } }); }
       else if (a === 'del') { if (P.list().length < 2) { A.toast('You need at least one project'); return; } if (!confirm('Delete this project for good?')) return; const was = id === P.cur; P.remove(id); if (was) { P.open(P.list()[0].id); } draw(); } }); }; draw(); };
 
   A.sheetDialog = () => { const m = A.doc.meta, h = host(); const f = (k, label, ph) => `<div class="row"><label>${label}</label><input data-k="${k}" value="${esc(m[k] || '')}" placeholder="${esc(ph || '')}"></div>`;

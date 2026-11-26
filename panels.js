@@ -83,7 +83,7 @@
     const box = $('#msgs'); S.marks = all.filter(x => x.x !== undefined).map(x => ({ x: x.x, y: x.y }));
     const nb = all.filter(m => m.kind === 'bad').length, nw = all.length - nb;
     box.innerHTML = all.length ? `<div class="msg ${nb ? 'bad' : 'warn'}"><b>${nb} error${nb === 1 ? '' : 's'}, ${nw} warning${nw === 1 ? '' : 's'}</b>. Click one to jump to it.</div>` + all.map((m, i) => `<div class="msg ${m.kind === 'bad' ? 'bad' : 'warn'}" data-i="${i}">${m.kind === 'bad' ? '✖ ' : '⚠ '}${esc(m.text)}</div>`).join('') : '<div class="msg ok">No problems found. Pins, wires, labels, power, ground, shorts and the simulator setup all look fine.</div>';
-    box.querySelectorAll('[data-i]').forEach(el => el.onclick = () => { const m = all[+el.dataset.i]; if (m.x === undefined) return; const v = S.view, rect = $('#svg').getBoundingClientRect(); v.tx = rect.width / 2 - m.x * v.sc; v.ty = rect.height / 2 - m.y * v.sc; A.applyView(); A.render(); });
+    box.querySelectorAll('[data-i]').forEach(el => el.onclick = () => { const m = all[+el.dataset.i]; if (m.x === undefined) { const mm = /\b([A-Z]{1,3}\d+)\b/.exec(m.text || ''), pt = mm && A.doc.parts.find(p => p.ref === mm[1]); if (!pt) { A.toast('This message is about the whole circuit, so there is nothing to jump to', 2200); return; } const b = A.worldBBox(pt); m.x = (b.x0 + b.x1) / 2; m.y = (b.y0 + b.y1) / 2; S.sel = new Set([pt.id]); } const v = S.view, rect = $('#svg').getBoundingClientRect(); v.tx = rect.width / 2 - m.x * v.sc; v.ty = rect.height / 2 - m.y * v.sc; A.applyView(); A.render(); });
     A.render(); };
   $('#bERC').onclick = A.runCheck; $('#bExamples').onclick = () => A.examplesDialog && A.examplesDialog();
   $('#bNewPart').onclick = () => A.newPartDialog && A.newPartDialog();

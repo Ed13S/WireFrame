@@ -43,7 +43,7 @@
   function frame(now) {
     if (!st.play) return; const dt = Math.min(0.05, (now - st.last) / 1000 || 0.016); st.last = now;
     try { Sim.run(dt * st.speed); } catch (e) { console.error(e); pause(); A.toast('The simulator hit a problem: ' + e.message); return; }
-    st.dots += dt; draw(dt); updateStatus(); requestAnimationFrame(frame);
+    const vs = Math.max(.1, Math.min(st.speed, 4)); st.dots += dt * vs; draw(dt * vs); updateStatus(); requestAnimationFrame(frame);
   }
   function draw(dt) {
     const v = Sim.v; let lo = 0, hi = 1; for (let i = 0; i < v.length; i++) { lo = Math.min(lo, v[i]); hi = Math.max(hi, v[i]); } let o = '';

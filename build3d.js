@@ -44,7 +44,10 @@
   function endY(pt) { if (B.holeStrip(pt[0], pt[1])) return TOP; let best = 3, bd = .8; const chk = (x, y, h) => { const d = Math.hypot(x - pt[0], y - pt[1]); if (d < bd) { bd = d; best = h; } };
     (A.doc.bsup || []).forEach(sp => B.supLegs(sp).forEach(l => chk(l.x, l.y, 19.5))); B.insts().forEach(i => { if (!i.bb) return; const k = B.kind(A.def(i.def)); B.legPos(i).forEach(l => chk(l.x, l.y, k === 'battery' ? 19.5 : k === 'board' ? 11.6 : 3)); }); return best; }
   function jumpers(m) { (A.doc.bw || []).forEach((j, i) => { const a = [j.a[0] * U, j.a[1] * U], b = [j.b[0] * U, j.b[1] * U], L = Math.hypot(a[0] - b[0], a[1] - b[1]), h = Math.min(28, 9 + L * .3), pts = []; const ya = endY(j.a), yb = endY(j.b);
-      for (let k = 0; k <= 28; k++) { const t = k / 28, s = Math.sin(Math.PI * t); pts.push([a[0] + (b[0] - a[0]) * t, ya + (yb - ya) * t + h * Math.pow(s, .55) + 1.2, a[1] + (b[1] - a[1]) * t]); } pts.unshift([a[0], ya - 3, a[1]], [a[0], ya, a[1]]); pts.push([b[0], yb, b[1]], [b[0], yb - 3, b[1]]); m.tube(B.jcolor(j, i), pts, .7, 8); }); }
+      for (let k = 0; k <= 28; k++) { const t = k / 28, s = Math.sin(Math.PI * t); pts.push([a[0] + (b[0] - a[0]) * t, ya + (yb - ya) * t + h * Math.pow(s, .55) + 1.2, a[1] + (b[1] - a[1]) * t]); } pts.unshift([a[0], ya + 3.6, a[1]]); pts.push([b[0], yb + 3.6, b[1]]); m.tube(B.jcolor(j, i), pts, .7, 8);
+      /* bare metal pin from the plastic boot down into the hole, so every connection is visible */
+      m.tube('#d7dbe2', [[a[0], ya + 3.7, a[1]], [a[0], ya - 3.2, a[1]]], .3, 8); m.tube('#d7dbe2', [[b[0], yb + 3.7, b[1]], [b[0], yb - 3.2, b[1]]], .3, 8);
+      m.tube(B.jcolor(j, i), [[a[0], ya + 3.5, a[1]], [a[0], ya + 1.6, a[1]]], .95, 8); m.tube(B.jcolor(j, i), [[b[0], yb + 3.5, b[1]], [b[0], yb + 1.6, b[1]]], .95, 8); }); }
   /* the board: printed rails, every hole, and colour for every strip that is electrically connected to something */
   function boardMarks(m, N) { const Y = TOP + .05, hs = .95, c = B.connectivity(), PAL = ['#2fa84f', '#f2c200', '#ff8a1f', '#9b4fd0', '#19b5c9', '#e0579b', '#7acb2a', '#c46a2c'];
     [[-.6, '#e03c31'], [1.7, '#2f6fdd'], [15.3, '#2f6fdd'], [17.7, '#e03c31']].forEach(([zz, col]) => m.top(col, .4 * U, (zz - .06) * U, (N + .6) * U, (zz + .06) * U, Y));

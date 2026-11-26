@@ -36,7 +36,7 @@
       if (tab === 'pins') { $$('table.pins [data-k]').forEach(el => el.oninput = el.onchange = e => { m.rows[+e.target.closest('tr').dataset.i][e.target.dataset.k] = e.target.value; preview(); });
         $$('[data-del]').forEach(b => b.onclick = () => { m.rows.splice(+b.dataset.del, 1); draw(); });
         $('#pdAdd').onclick = () => { const last = m.rows[m.rows.length - 1]; m.rows.push({ n: String(m.rows.length + 1), name: '', side: last ? last.side : 'left' }); draw(); const ins = $$('table.pins tbody tr:last-child input'); ins[1] && ins[1].focus(); };
-        $('#pdBulk').onclick = () => { const t = prompt('One pin per line: number, name, side (left/right/top/bottom). Example:\n1 VCC top\n2 IN left\n3 OUT right', ''); if (!t) return;
+        $('#pdBulk').onclick = () => { const t = window.prompt && prompt('One pin per line: number, name, side (left/right/top/bottom). Example:\n1 VCC top\n2 IN left\n3 OUT right', ''); if (!t) return;
           t.split(/\r?\n/).forEach(l => { const w = l.trim().split(/[\s,;]+/); if (w.length >= 2) { const side = ['left', 'right', 'top', 'bottom'].includes((w[2] || '').toLowerCase()) ? w[2].toLowerCase() : 'left'; m.rows.push({ n: w[0], name: w[1], side }); } }); draw(); }; }
       else $('#pdJson').oninput = e => { jsonText = e.target.value; preview(); };
       $('#pdSave').onclick = () => { const d = cur(); if (!d || !d.pins || !d.draw) return A.toast('Fill in the name and pins first'); d.ref = m.ref || d.ref || 'U'; d.value = m.value || d.value || d.name; d.desc = m.desc || d.desc || '';

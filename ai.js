@@ -129,7 +129,7 @@ ${q}`;
   A.aiAsk = async (prompt, kind) => {
     if (window.electronAI && window.electronAI.ask) return await window.electronAI.ask(prompt, kind);
     if (window.AI_PROXY_URL) { const r = await fetch(window.AI_PROXY_URL, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ prompt, kind }) });
-      if (!r.ok) throw new Error('The AI server answered ' + r.status + (r.status === 429 ? ' (too many requests, try again shortly)' : '')); const j = await r.json(); if (j.error) throw new Error(j.error); return j.text; }
+      let j = null; try { j = await r.json(); } catch (e) { /* not JSON */ } if (!r.ok) throw new Error('The AI server answered ' + r.status + (r.status === 429 ? ' (too many requests, try again shortly)' : '') + (j && j.error ? ': ' + j.error : '')); if (!j) throw new Error('The AI server sent an unreadable reply'); if (j.error) throw new Error(j.error); return j.text; }
     throw new Error('no-transport'); };
 
   /* ---------- dialog ---------- */
