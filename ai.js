@@ -140,7 +140,7 @@ ${q}`;
       <div class="tabs"><button data-k="circuit">Make a circuit</button><button data-k="part">Make a part</button><button data-k="ask">Ask about this circuit</button></div>
       <div id="aiKey" class="note" hidden></div>
       <textarea id="aiText" rows="4" placeholder=""></textarea>
-      <label id="aiModRow" class="note"><input type="checkbox" id="aiMod" ${hasDoc ? '' : 'disabled'}> Change the circuit that is on the sheet now (otherwise the sheet is replaced${hasDoc ? '; Undo brings it back' : ''})</label>
+      <label id="aiModRow" class="note"><input type="checkbox" id="aiMod"> Change the circuit that is on the sheet now (otherwise the sheet is replaced${hasDoc ? '; Undo brings it back' : '; the sheet is empty right now, so this has nothing to change'})</label>
       <div id="aiPaste" ${mode === 'paste' ? '' : 'hidden'}><p class="note">No AI server is connected, so this works by copy and paste with any Claude chat: 1) press Copy request, 2) paste it into Claude, 3) paste Claude’s reply below and press Build.</p>
         <textarea id="aiReply" rows="6" placeholder="Paste Claude’s reply here"></textarea></div>
       <div id="aiOut" class="note"></div></div>

@@ -101,6 +101,7 @@
   bsvg.addEventListener('wheel', e => { e.preventDefault(); const v = V.view, r = bsvg.getBoundingClientRect(); const mouseWheel = Math.abs(e.deltaY) >= 50 && Number.isInteger(e.deltaY) && !e.deltaX;
     if (e.ctrlKey || e.metaKey || mouseWheel) { const mx = e.clientX - r.left, my = e.clientY - r.top, ns = Math.max(4, Math.min(80, v.sc * Math.exp(-e.deltaY * (e.ctrlKey ? .01 : .0018)))), k = ns / v.sc; v.tx = mx - (mx - v.tx) * k; v.ty = my - (my - v.ty) * k; v.sc = ns; } else { v.tx -= e.deltaX; v.ty -= e.deltaY; } applyV(); }, { passive: false });
   const sel1 = () => { const k = [...V.sel][0]; return k; };
+  A.bsel = () => V.sel; A.bjump = id => { const inst = A.doc.parts.find(p => p.id === id); if (!inst || !inst.bb) return; const b = B.bbox(inst), r = bsvg.getBoundingClientRect(), v = V.view, cx = (b.x0 + b.x1) / 2, cy = (b.y0 + b.y1) / 2; v.sc = Math.max(v.sc, 16); v.tx = r.width / 2 - cx * v.sc; v.ty = r.height / 2 - cy * v.sc; applyV(); B.render(); };
   A.bselect = (ids) => { V.sel = new Set(ids); S.sel = new Set([...V.sel].filter(k => !k.includes(':'))); A.renderProps && A.renderProps(); buildProps(); B.render(); };
   function buildProps() { const k = sel1(); if (A.mode !== 'build' || !k || !k.includes(':')) return; const b = $('#propBody');
     if (k.startsWith('j:')) { const j = (A.doc.bw || []).find(x => 'j:' + x.id === k); if (!j) return; b.innerHTML = `<p><b>Jumper wire</b></p><div class="row"><label>Colour</label><span>${[...JC, '#d33', '#222', '#fff'].map(c => `<button class="swatch" data-c="${c}" style="background:${c}" aria-label="${c}"></button>`).join('')}</span></div><button id="bjDel" class="danger">Delete wire</button>`;
@@ -132,7 +133,7 @@
     const d = V.drag; if (d && d.type === 'move') { if (!d.moved && Math.abs(gx - d.x0) + Math.abs(gy - d.y0) < .5) return; if (!d.orig) { d.orig = []; V.sel.forEach(k => { const p = A.doc.parts.find(x => x.id === k); if (p && p.bb) d.orig.push([p.bb, p.bb.x, p.bb.y]); const s = (A.doc.bsup || []).find(x => 's:' + x.id === k); if (s) d.orig.push([s, s.x, s.y]); }); }
       d.moved = true; const dx = Math.round(gx - d.x0), dy = Math.round(gy - d.y0); d.orig.forEach(([o, x, y]) => { o.x = x + dx; o.y = y + dy; }); B.render(); return; }
     drawOver(); });
-  bsvg.addEventListener('pointerup', e => { if (pan) { pan = null; return; } if (A.simPointer) A.simPointer(null, 'up');
+  bsvg.addEventListener('pointerup', e => { if (pan) { const was = pan; pan = null; if (was.right && !was.moved && !V.draft && !S.placing) A.ctxShow(e, 'build'); return; } if (A.simPointer) A.simPointer(null, 'up');
     if (V.draft && V.draft.drag && Math.hypot(e.clientX - V.draft.x0, e.clientY - V.draft.y0) > 6) { const [gx, gy] = toG(e.clientX, e.clientY); finishJumper(snapPt(gx, gy)); }
     else if (V.draft && V.draft.drag) { V.draft.drag = false; }
     const d = V.drag; V.drag = null; if (d && d.moved) { A.doc.master = 'build'; A.commit(); } });

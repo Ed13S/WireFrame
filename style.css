@@ -199,3 +199,7 @@ body.propsopen #props{display:block}
 
 #props{width:214px!important} .pvw{background:var(--paper,#f5f4ef);border:1px solid var(--line,#444);border-radius:6px;margin:0 0 8px;padding:4px;height:104px} .pvw svg{width:100%;height:100%} .pvw .s-ref,.pvw .s-val{fill:var(--pinc,#0a7a7a)}
 .pi{position:relative} .pinb{position:absolute;right:4px;top:4px;background:transparent;border:0;color:var(--muted,#888);cursor:pointer;font-size:15px;padding:0 3px} .pinb.on{color:#b4ff00} .pinhead{margin:8px 2px 2px;font-size:11px;text-transform:uppercase;letter-spacing:.06em}
+
+#ctxMenu{position:fixed;z-index:300;min-width:190px;background:var(--panel,#1b1b1b);color:inherit;border:1px solid var(--line,#555);border-radius:8px;box-shadow:0 10px 30px rgba(0,0,0,.5);padding:4px;display:flex;flex-direction:column}
+#ctxMenu button{display:flex;justify-content:space-between;gap:18px;text-align:left;background:transparent;border:0;color:inherit;padding:6px 10px;border-radius:5px;cursor:pointer;font:inherit;font-size:13px} #ctxMenu button:hover:not(:disabled){background:rgba(180,255,0,.18)} #ctxMenu button:disabled{opacity:.35;cursor:default} #ctxMenu kbd{opacity:.55;font:inherit;font-size:11px} #ctxMenu hr{border:0;border-top:1px solid var(--line,#444);margin:4px 2px}
+#bAutoNC{display:block;margin-top:6px}

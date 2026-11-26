@@ -155,7 +155,7 @@
     drawOverlay();
   });
   svg.addEventListener('pointerup', e => {
-    if (panning) { const was = panning; panning = null; svg.style.cursor = S.tool === 'select' ? 'default' : 'crosshair'; if (was.right && !was.moved) { if (S.draft) { finishWire(); } else if (S.placing) { S.placing = null; setTool('select'); } } return; }
+    if (panning) { const was = panning; panning = null; svg.style.cursor = S.tool === 'select' ? 'default' : 'crosshair'; if (was.right && !was.moved) { if (S.draft) { finishWire(); } else if (S.placing) { S.placing = null; setTool('select'); } else A.ctxShow(e, 'sch'); } return; }
     if (A.simPointer) A.simPointer(null, 'up');
     if (S.drag && S.drag.sticky) return; const d = S.drag; S.drag = null; if (!d) return;
     if (d.type === 'move') { if (d.moved) { fixDiagonals(d); A.commit(); }
@@ -189,7 +189,7 @@
     const sel1 = () => [...S.sel].map(findItem).filter(Boolean)[0], focus = id => { const i = $(id); if (i) { i.focus(); i.select(); } };
     const startGrab = () => { if (!S.sel.size) return; const d = { type: 'move', x0: S.mouse.x, y0: S.mouse.y, last: [S.mouse.x, S.mouse.y], moved: false, clickId: null, orig: null, sticky: true }; startMove(d); S.drag = d; A.toast('Move: click to drop, Esc to cancel', 1800); };
     if (e.ctrlKey && k === 'home' || (e.shiftKey && k === 'home')) A.fitContent();
-    else if (k === 'q') setTool('nc');
+    else if (k === 'q' && e.shiftKey) { A.autoNC(); A.runCheck(); } else if (k === 'q') setTool('nc');
     else if (k === 'a') { e.preventDefault(); setTool('select'); libOpen(!document.body.classList.contains('libopen')); } else if (k === 'i') propsOpen(!document.body.classList.contains('propsopen'));
     else if (k === 'p') { e.preventDefault(); const c = $$('#cats [data-cat]').find(b => b.dataset.cat === 'Power'); libOpen(true); if (c) c.click(); const q = $('#q'); if (q) { q.value = ''; q.focus(); } }
     else if (k === 'w') setTool('wire'); else if (k === 'l') setTool('label'); else if (k === 't') setTool('text'); else if (k === 'j') { setTool('wire'); A.toast('Junction dots appear automatically where wires meet or end on a wire', 2600); } else if (k === 's') setTool('select');

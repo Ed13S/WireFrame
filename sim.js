@@ -77,7 +77,7 @@
         case 'C': el.c = Math.max(1e-15, num(inst.value, 1e-7)); el.st.v = 0; break;
         case 'L': el.l = Math.max(1e-9, num(inst.value, 1e-3)); el.st.i = 0; break;
         case 'V': el.vs = num(inst.value, 5); el.rint = 0.1; break;
-        case 'VAC': { const m2 = /([\d.]+)\s*(m?)V?\s*(?:[,\s]+([\d.]+)\s*(k?)Hz)?/i.exec(inst.value || ''); el.amp = (m2 ? +m2[1] : 5) * (m2 && m2[2] ? 1e-3 : 1) * Math.SQRT2 / 1; el.f = m2 && m2[3] ? +m2[3] * (m2[4] ? 1e3 : 1) : 50; if (/pk|peak/i.test(inst.value || '')) el.amp /= Math.SQRT2; el.rint = 0.1; break; }
+        case 'VAC': { const vs0 = String(inst.value || ''), mh = /([\d.]+)\s*(k|M)?\s*Hz/i.exec(vs0), mv = /([\d.]+)\s*(m)?\s*V/i.exec(vs0.replace(mh ? mh[0] : '', '')) || (mh ? null : /([\d.]+)/.exec(vs0)); el.amp = (mv ? +mv[1] : 5) * (mv && mv[2] ? 1e-3 : 1) * Math.SQRT2; el.f = mh ? +mh[1] * (/k/i.test(mh[2] || '') ? 1e3 : /M/.test(mh[2] || '') ? 1e6 : 1) : 50; if (/pk|peak/i.test(inst.value || '')) el.amp /= Math.SQRT2; el.rint = 0.1; break; }
         case 'D': el.is = (m.p && m.p.is) || 1e-12; el.nn = (m.p && m.p.n) || 1.9; break;
         case 'ZD': el.vz = Math.max(1, num(String(inst.value || '5.1').replace(/V(\d)/i, '.$1'), 5.1)); break;
         case 'LED': { const c = (inst.value || '').toUpperCase(); const vf = /BLUE|WHITE/.test(c) ? 3.0 : /GREEN/.test(c) ? 2.1 : /YELLOW|ORANGE/.test(c) ? 2.0 : /IR/.test(c) ? 1.3 : 1.85; el.nn = 2; el.is = 0.01 / Math.exp(vf / (el.nn * VT)); el.vf = vf; el.color = /BLUE/.test(c) ? '#4aa8ff' : /GREEN/.test(c) ? '#46e06a' : /YELLOW/.test(c) ? '#ffe14a' : /ORANGE/.test(c) ? '#ffa43a' : /WHITE/.test(c) ? '#fff6dc' : /IR/.test(c) ? '#ff4040' : '#ff3b3b'; el.burn = 0; break; }
