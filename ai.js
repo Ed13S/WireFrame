@@ -68,7 +68,7 @@ ${A.netlistText()}
 Question:
 ${q}`;
 
-  const parseJSON = (t) => { t = String(t).trim(); try { return JSON.parse(t); } catch (e) {} const fence = /```(?:json)?\s*([\s\S]*?)```/.exec(t); if (fence) try { return JSON.parse(fence[1]); } catch (e) {}
+  const parseJSON = (t) => { t = String(t).replace(/<think>[\s\S]*?<\/think>/gi, '').trim(); const tc = s => s.replace(/,\s*([}\]])/g, '$1'); try { return JSON.parse(tc(t)); } catch (e) {} try { return JSON.parse(t); } catch (e) {} const fence = /```(?:json)?\s*([\s\S]*?)```/.exec(t); if (fence) try { return JSON.parse(fence[1]); } catch (e) {}
     const a = t.indexOf('{'), b = t.lastIndexOf('}'); if (a >= 0 && b > a) { try { return JSON.parse(t.slice(a, b + 1).replace(/^\s*\/\/.*$/gm, '')); } catch (e) {} } return null; };
 
   /* ---------- build a circuit from a spec ---------- */
@@ -126,7 +126,7 @@ ${q}`;
 
   /* ---------- transport ---------- */
   A.aiMode = () => (window.electronAI && window.electronAI.ask) ? 'electron' : (window.AI_PROXY_URL ? 'proxy' : 'paste');
-  A.aiAsk = async (prompt, kind) => {
+  const aiAsk0 = async (prompt, kind) => {
     if (window.electronAI && window.electronAI.ask) return await window.electronAI.ask(prompt, kind);
     if (window.AI_PROXY_URL) { const r = await fetch(window.AI_PROXY_URL, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ prompt, kind }) });
       let j = null; try { j = await r.json(); } catch (e) { /* not JSON */ } if (!r.ok) throw new Error('The AI server answered ' + r.status + (r.status === 429 ? ' (too many requests, try again shortly)' : '') + (j && j.error ? ': ' + j.error : '')); if (!j) throw new Error('The AI server sent an unreadable reply'); if (j.error) throw new Error(j.error); return j.text; }
@@ -166,6 +166,10 @@ ${q}`;
     else $('#aiGo').onclick = async () => { const p = promptNow(); if (!p) return; const b = $('#aiGo'); b.disabled = true; $('#aiOut').innerHTML = '<span class="spin"></span>Thinking… this can take up to a minute.';
       try { await finish(await A.aiAsk(p, kind)); } catch (e) { $('#aiOut').textContent = 'The AI request failed: ' + e.message.replace(/^Error invoking remote method '[^']*': (Error: )?/, ''); } b.disabled = false; };
   };
+  /* free models sometimes wrap the JSON in chat; ask once more, strictly, before giving up */
+  A.aiAsk = async (prompt, kind) => { let r = await aiAsk0(prompt, kind);
+    if (kind && kind !== 'ask' && !parseJSON(r)) r = await aiAsk0(prompt + '\n\nYour previous reply could not be parsed. Reply again with ONLY the JSON object: start with { and end with }, no explanation, no markdown fences, no comments.', kind);
+    return r; };
   $('#bAI').onclick = () => A.aiDialog();
 
   /* ---------- lesson circuits ---------- */

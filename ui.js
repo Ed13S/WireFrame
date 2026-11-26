@@ -63,10 +63,11 @@
   /* ---------- selection / editing ops ---------- */
   const findItem = id => A.doc.parts.find(p => p.id === id) || A.doc.wires.find(p => p.id === id) || A.doc.labels.find(p => p.id === id) || A.doc.notes.find(p => p.id === id) || (A.doc.nc || []).find(p => p.id === id);
   A.select = (ids) => { S.sel = new Set(ids); S.hl = new Set(); renderProps(); A.render(); };
-  function deleteSel() { if (!S.sel.size) return; const d = A.doc, s = S.sel; d.parts = d.parts.filter(p => !s.has(p.id)); d.wires = d.wires.filter(p => !s.has(p.id)); d.labels = d.labels.filter(p => !s.has(p.id)); d.notes = d.notes.filter(p => !s.has(p.id)); d.nc = (d.nc || []).filter(p => !s.has(p.id)); S.sel = new Set(); A.commit(); }
-  function rotateSel(dir) { if (S.placing) { S.rot = (S.rot + 1) % 4; drawOverlay(); return; } let ch = false;
+  function deleteSel() { if (A.mode === 'build' && A.buildKey) { A.buildKey(noop, 'delete'); return; } if (!S.sel.size) return; const d = A.doc, s = S.sel; d.parts = d.parts.filter(p => !s.has(p.id)); d.wires = d.wires.filter(p => !s.has(p.id)); d.labels = d.labels.filter(p => !s.has(p.id)); d.notes = d.notes.filter(p => !s.has(p.id)); d.nc = (d.nc || []).filter(p => !s.has(p.id)); S.sel = new Set(); A.commit(); }
+  const noop = { preventDefault() {} };
+  function rotateSel(dir) { if (A.mode === 'build' && !S.placing && A.buildKey) { A.buildKey(noop, 'r'); return; } if (S.placing) { S.rot = (S.rot + 1) % 4; drawOverlay(); return; } let ch = false;
     A.doc.parts.forEach(p => { if (S.sel.has(p.id)) { p.rot = ((p.rot || 0) + (dir || 1) + 4) % 4; ch = true; } }); if (ch) A.commit(); }
-  function mirrorSel() { if (S.placing) { S.mir ^= 1; drawOverlay(); return; } let ch = false; A.doc.parts.forEach(p => { if (S.sel.has(p.id)) { p.mir = p.mir ? 0 : 1; ch = true; } }); if (ch) A.commit(); }
+  function mirrorSel() { if (A.mode === 'build') { A.toast('Mirror is for the schematic. On the breadboard, use Rotate.', 2200); return; } if (S.placing) { S.mir ^= 1; drawOverlay(); return; } let ch = false; A.doc.parts.forEach(p => { if (S.sel.has(p.id)) { p.mir = p.mir ? 0 : 1; ch = true; } }); if (ch) A.commit(); }
   function copySel() { const d = A.doc, s = S.sel; if (!s.size) return; S.clip = JSON.stringify({ parts: d.parts.filter(p => s.has(p.id)), wires: d.wires.filter(p => s.has(p.id)), labels: d.labels.filter(p => s.has(p.id)), notes: d.notes.filter(p => s.has(p.id)), nc: (d.nc || []).filter(p => s.has(p.id)) }); A.toast('Copied'); }
   function paste(dx, dy) { if (!S.clip) return; const c = JSON.parse(S.clip), ids = []; dx = dx === undefined ? 2 : dx; dy = dy === undefined ? 2 : dy;
     c.parts.forEach(p => { const n = Object.assign({}, p, { id: A.id('p'), x: p.x + dx, y: p.y + dy }); const df = A.def(n.def); if (df && !(n.ref || '').startsWith('#')) n.ref = A.nextRef(df.ref); A.doc.parts.push(n); ids.push(n.id); });
