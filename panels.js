@@ -10,13 +10,15 @@
     const have = new Set(Object.values(A.LIB).filter(d => d.builtin).map(d => d.cat)); const cats = ['All', ...ORDER.filter(c => have.has(c)), 'My parts', 'KiCad library'];
     $('#cats').innerHTML = cats.map(c => `<button class="chip${L.cat === c ? ' on' : ''}" data-cat="${esc(c)}">${esc(c)}</button>`).join('');
   }
-  const item = (d, thumb) => `<div class="pi" role="option" data-id="${esc(d.id)}" title="${esc(d.desc || d.name)}">${thumb ? A.thumb(d) : '<svg viewBox="0 0 10 7"><rect x="1" y="1" width="8" height="5" fill="none" stroke="var(--muted)" stroke-width=".3" stroke-dasharray=".8 .6"/></svg>'}<span>${esc(d.name)}<small>${esc(d.desc || d.cat || d.lib || '')}</small></span></div>`;
+  const pins = () => { try { const p = JSON.parse(localStorage.getItem('wf_pins')); if (Array.isArray(p)) return p; } catch (e) { /* default */ } return ['LED', 'R', 'C', 'D', 'SW', 'GND', 'V5']; };
+  const setPins = a => { try { localStorage.setItem('wf_pins', JSON.stringify(a)); } catch (e) { /* ignore */ } };
+  const item = (d, thumb) => `<div class="pi" role="option" data-id="${esc(d.id)}" title="${esc(d.desc || d.name)}"><button class="pinb${pins().includes(d.id) ? ' on' : ''}" data-pin="${esc(d.id)}" title="${pins().includes(d.id) ? 'Unpin' : 'Pin to the top of this list'}">${pins().includes(d.id) ? '★' : '☆'}</button>${thumb ? A.thumb(d) : '<svg viewBox="0 0 10 7"><rect x="1" y="1" width="8" height="5" fill="none" stroke="var(--muted)" stroke-width=".3" stroke-dasharray=".8 .6"/></svg>'}<span>${esc(d.name)}<small>${esc(d.desc || d.cat || d.lib || '')}</small></span></div>`;
   let token = 0;
   async function renderList() {
     const my = ++token, box = $('#partList'), q = L.q.trim().toLowerCase(); let html = '';
     const tools = L.cat === 'KiCad library' ? `<div class="row" style="margin:0 0 6px"><select id="libSel" aria-label="KiCad library"><option value="">All libraries (search)</option>${(A.kicadIndex ? A.kicadIndex.libs : []).map(l => `<option value="${esc(l.lib)}"${L.lib === l.lib ? ' selected' : ''}>${esc(l.lib)} (${l.count})</option>`).join('')}</select></div>` : '';
     const local = Object.values(A.LIB).filter(d => !d.kicad && (L.cat === 'All' || (L.cat === 'My parts' ? d.custom : d.cat === L.cat)) && (!q || q.split(/\s+/).every(w => hay(d).includes(w))));
-    if (L.cat !== 'KiCad library') { html += local.map(d => item(d, true)).join(''); if (!local.length && L.cat !== 'All') html += `<p class="muted">${L.cat === 'My parts' ? 'No parts yet. Use “+ New part” or the AI Assistant to make one.' : 'No matches.'}</p>`; }
+    if (L.cat !== 'KiCad library') { const pd = !q ? pins().map(id => A.LIB[id]).filter(Boolean) : []; if (pd.length) html += '<p class="muted pinhead">★ Pinned</p>' + pd.map(d => item(d, true)).join('') + '<p class="muted pinhead">' + (L.cat === 'All' ? 'All parts' : L.cat) + '</p>'; html += local.map(d => item(d, true)).join(''); if (!local.length && L.cat !== 'All') html += `<p class="muted">${L.cat === 'My parts' ? 'No parts yet. Use “+ New part” or the AI Assistant to make one.' : 'No matches.'}</p>`; }
     box.innerHTML = tools + html;
     if (L.cat === 'KiCad library' || (L.cat === 'All' && q.length >= 2)) {
       try { await A.loadKicadIndex(); } catch (e) { if (my === token) box.insertAdjacentHTML('beforeend', `<p class="muted">The KiCad library loads from the <code>lib/</code> folder, so it needs the page served over http(s) (GitHub Pages or the Mac app), not opened as a file.</p>`); return; }
@@ -36,7 +38,7 @@
   A.refreshLib = () => { renderCats(); renderList(); };
   $('#cats').onclick = e => { const b = e.target.closest('[data-cat]'); if (!b) return; L.cat = b.dataset.cat; L.limit = 150; renderCats(); renderList(); };
   let qt; $('#q').oninput = e => { L.q = e.target.value; L.limit = 150; clearTimeout(qt); qt = setTimeout(renderList, 120); };
-  $('#partList').onclick = e => { if (e.target.id === 'more') { L.limit += 150; renderList(); return; } const it = e.target.closest('.pi'); if (it) A.startPlacing(it.dataset.id); };
+  $('#partList').onclick = e => { const pb = e.target.closest('.pinb'); if (pb) { e.stopPropagation(); const id = pb.dataset.pin, a = pins(), i = a.indexOf(id); if (i >= 0) a.splice(i, 1); else a.unshift(id); setPins(a); renderList(); return; } if (e.target.id === 'more') { L.limit += 150; renderList(); return; } const it = e.target.closest('.pi'); if (it) A.startPlacing(it.dataset.id); };
   $('#partList').onchange = e => { if (e.target.id === 'libSel') { L.lib = e.target.value; L.limit = 150; renderList(); } };
 
   /* ---------- file helpers ---------- */

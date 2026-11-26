@@ -7,9 +7,16 @@
   A.defFromRows = (m) => { const sides = { l: [], r: [], t: [], b: [] }; m.rows.forEach(r => { if (!r.n && !r.name) return; sides[{ left: 'l', right: 'r', top: 't', bottom: 'b' }[r.side] || 'l'].push((r.n || '?') + ':' + (r.name || '')); });
     const d = window.buildBox('My:' + m.name.replace(/\s+/g, '_'), m.name, 'My parts', m.ref || 'U', m.value || m.name, sides); d.desc = m.desc || ''; d.spec = { rows: m.rows }; return d; };
 
+  /* "Inside the part": one component per line, e.g.  D AC1 +   |  R + - 1k  |  C ~mid GND 100u. Nodes are pin names/numbers, or ~name for an internal node. */
+  const TYPES = { R: 'R', C: 'C', L: 'L', D: 'D', LED: 'LED', ZD: 'D_ZENER', ZENER: 'D_ZENER', SCH: 'D_SCHOTTKY', SW: 'SW' };
+  const parseInside = (text, rows) => { const sub = [], errs = []; const find = t => { if (t[0] === '~') return t; const r = rows.find(q => String(q.n) === t) || rows.find(q => (q.name || '').toLowerCase() === t.toLowerCase()); return r ? String(r.n) : null; };
+    (text || '').split(/\r?\n/).forEach((ln, i) => { ln = ln.replace(/#.*/, '').trim(); if (!ln) return; const w = ln.split(/\s+/), ty = TYPES[w[0].toUpperCase()]; if (!ty) { errs.push('Line ' + (i + 1) + ': unknown part “' + w[0] + '” (use R, C, L, D, LED, ZD, SCH or SW)'); return; }
+      const a = w[1] && find(w[1]), b = w[2] && find(w[2]); if (!a || !b) { errs.push('Line ' + (i + 1) + ': “' + (!a ? w[1] : w[2]) + '” is not one of this part’s pins (or an internal ~name)'); return; } const p = { as: ty, pins: [a, b] }; if (w[3]) p.value = w[3]; sub.push(p); });
+    return { sub, errs }; };
+  const insideText = d => { if (!d || !d.sub) return ''; const nm = n => { if (String(n)[0] === '~') return n; const r = (d.spec ? d.spec.rows : d.pins).find(q => String(q.n) === String(n)); return r && r.name ? r.name : n; }; const back = Object.keys(TYPES).reduce((o, k) => { if (!o[TYPES[k]]) o[TYPES[k]] = k; return o; }, {}); return d.sub.map(s => [back[s.as] || s.as, nm(s.pins[0]), nm(s.pins[1]), s.value || ''].join(' ').trim()).join('\n'); };
   A.newPartDialog = (editId) => {
     const ex = editId ? A.def(editId) : null;
-    const m = { name: ex ? ex.name : '', ref: ex ? ex.ref : 'U', value: ex ? ex.value : '', desc: ex ? (ex.desc || '') : '', rows: ex && ex.spec ? ex.spec.rows.map(r => Object.assign({}, r)) : [{ n: '1', name: 'IN', side: 'left' }, { n: '2', name: 'OUT', side: 'right' }, { n: '3', name: 'VCC', side: 'top' }, { n: '4', name: 'GND', side: 'bottom' }] };
+    const m = { name: ex ? ex.name : '', ref: ex ? ex.ref : 'U', value: ex ? ex.value : '', desc: ex ? (ex.desc || '') : '', inside: insideText(ex), rows: ex && ex.spec ? ex.spec.rows.map(r => Object.assign({}, r)) : [{ n: '1', name: 'IN', side: 'left' }, { n: '2', name: 'OUT', side: 'right' }, { n: '3', name: 'VCC', side: 'top' }, { n: '4', name: 'GND', side: 'bottom' }] };
     let tab = ex && !ex.spec ? 'json' : 'pins'; let jsonText = '';
     const cur = () => { if (tab === 'json') { try { const o = JSON.parse(jsonText); o.id = o.id || 'My:' + (o.name || m.name).replace(/\s+/g, '_'); o.name = o.name || m.name; return o; } catch (e) { return null; } }
       if (!m.name.trim()) return null; if (!m.rows.length) return null; return A.defFromRows(m); };
@@ -17,12 +24,13 @@
       host().innerHTML = `<div class="back"><div class="modal"><header><b>${ex ? 'Edit part' : 'New part'}</b><button id="pdX" class="small">Close</button></header><div class="mb">
         <div class="grid2"><div class="row"><label>Name</label><input id="pdName" value="${esc(m.name)}" placeholder="e.g. LM358 (DIP-8)"></div><div class="row"><label>Ref prefix</label><input id="pdRef" value="${esc(m.ref)}" maxlength="4"></div>
         <div class="row"><label>Value</label><input id="pdVal" value="${esc(m.value)}"></div><div class="row"><label>Notes</label><input id="pdDesc" value="${esc(m.desc)}"></div></div>
-        <div class="tabs"><button data-t="pins" class="${tab === 'pins' ? 'on' : ''}">Pins and box</button><button data-t="json" class="${tab === 'json' ? 'on' : ''}">Shape (advanced)</button></div>
+        <div class="tabs"><button data-t="pins" class="${tab === 'pins' ? 'on' : ''}">Pins and box</button><button data-t="inside" class="${tab === 'inside' ? 'on' : ''}">Inside (simulation)</button><button data-t="json" class="${tab === 'json' ? 'on' : ''}">Shape (advanced)</button></div>
         <div class="grid2"><div id="pdLeft"></div><div><div class="preview" id="pdPrev" style="display:flex;align-items:center;justify-content:center"></div><p class="note" id="pdErr"></p></div></div></div>
         <footer><button id="pdCancel">Cancel</button><button id="pdSave" class="accent">${ex ? 'Save changes' : 'Add to My parts'}</button></footer></div></div>`;
       const L = $('#pdLeft');
       if (tab === 'pins') { L.innerHTML = `<table class="pins"><thead><tr><th style="width:18%">Pin no.</th><th>Name</th><th style="width:30%">Side</th><th></th></tr></thead><tbody>${m.rows.map((r, i) => `<tr data-i="${i}"><td><input data-k="n" value="${esc(r.n)}"></td><td><input data-k="name" value="${esc(r.name)}"></td><td><select data-k="side">${['left', 'right', 'top', 'bottom'].map(s => `<option${r.side === s ? ' selected' : ''}>${s}</option>`).join('')}</select></td><td><button class="small danger" data-del="${i}" aria-label="Remove pin">×</button></td></tr>`).join('')}</tbody></table>
           <div class="row" style="margin-top:8px"><button id="pdAdd" class="small">+ Add pin</button><button id="pdBulk" class="small">Paste a pin list…</button></div><p class="note">Pins are drawn in the order listed on each side. Pin names are shown inside the box.</p>`; }
+      else if (tab === 'inside') { L.innerHTML = `<textarea id="pdIn" rows="11" spellcheck="false" placeholder="D AC1 +\nD AC2 +\nD - AC1\nD - AC2">${esc(m.inside)}</textarea><p class="note">Build the part from simple components so it simulates. One per line: <code>type node node [value]</code>. Types: R, C, L, D, LED, ZD, SCH, SW. Nodes are your pin names or numbers, or <code>~name</code> for a hidden internal node. Diodes go anode then cathode. Example, a bridge rectifier with pins AC1, AC2, +, −:<br><code>D AC1 +</code> <code>D AC2 +</code> <code>D - AC1</code> <code>D - AC2</code><br>Leave empty for a part that is only a drawing.</p>`; }
       else { if (!jsonText) { const c = (tab === 'json' && ex) ? ex : (A.defFromRows(m)); jsonText = JSON.stringify({ name: c.name, ref: c.ref, value: c.value, pins: c.pins, draw: c.draw }, null, 1); }
         L.innerHTML = `<textarea id="pdJson" rows="16" spellcheck="false">${esc(jsonText)}</textarea><p class="note">Units are grid squares (1 square = 10 px). Shapes: <code>l</code> line [x1,y1,x2,y2], <code>r</code> rect [x,y,w,h], <code>c</code> circle [cx,cy,r], <code>p</code> polygon, <code>d</code> SVG path, <code>x</code> text. Pins sit on the connection end, at whole numbers.</p>`; }
       bind(); preview();
@@ -38,9 +46,10 @@
         $('#pdAdd').onclick = () => { const last = m.rows[m.rows.length - 1]; m.rows.push({ n: String(m.rows.length + 1), name: '', side: last ? last.side : 'left' }); draw(); const ins = $$('table.pins tbody tr:last-child input'); ins[1] && ins[1].focus(); };
         $('#pdBulk').onclick = () => { const t = window.prompt && prompt('One pin per line: number, name, side (left/right/top/bottom). Example:\n1 VCC top\n2 IN left\n3 OUT right', ''); if (!t) return;
           t.split(/\r?\n/).forEach(l => { const w = l.trim().split(/[\s,;]+/); if (w.length >= 2) { const side = ['left', 'right', 'top', 'bottom'].includes((w[2] || '').toLowerCase()) ? w[2].toLowerCase() : 'left'; m.rows.push({ n: w[0], name: w[1], side }); } }); draw(); }; }
+      else if (tab === 'inside') $('#pdIn').oninput = e => { m.inside = e.target.value; };
       else $('#pdJson').oninput = e => { jsonText = e.target.value; preview(); };
       $('#pdSave').onclick = () => { const d = cur(); if (!d || !d.pins || !d.draw) return A.toast('Fill in the name and pins first'); d.ref = m.ref || d.ref || 'U'; d.value = m.value || d.value || d.name; d.desc = m.desc || d.desc || '';
-        if (tab === 'json') { d.id = ex ? ex.id : 'My:' + d.name.replace(/\s+/g, '_'); } if (ex) d.id = ex.id; delete d.builtin; A.addCustom(d); host().innerHTML = ''; A.L.cat = 'My parts'; A.refreshLib(); A.toast('Saved “' + d.name + '” to My parts'); A.render(); A.renderProps(); };
+        if (tab === 'json') { d.id = ex ? ex.id : 'My:' + d.name.replace(/\s+/g, '_'); } if (ex) d.id = ex.id; delete d.builtin; if ((m.inside || '').trim()) { const pr = parseInside(m.inside, m.rows); if (pr.errs.length) { tab = 'inside'; draw(); return A.toast(pr.errs[0], 4500); } d.sub = pr.sub; } else delete d.sub; A.addCustom(d); host().innerHTML = ''; A.L.cat = 'My parts'; A.refreshLib(); A.toast('Saved “' + d.name + '” to My parts'); A.render(); A.renderProps(); };
     };
     draw();
   };

@@ -196,3 +196,6 @@ body.propsopen #props{display:block}
 #bAdd.accent{background:#b4ff00;color:#000;font-weight:700}
 .s-txt,.s-pin,.s-val,.s-ref,.s-lbl,.s-note{stroke-width:.07px;paint-order:stroke;stroke-linejoin:round} .s-txt,.s-pin,.s-val,.s-ref{stroke:var(--pinc)} .s-lbl{stroke:var(--txt)} .s-note{stroke:var(--fg)} .sel .s-txt,.sel .s-ref,.sel .s-val,.sel .s-lbl,.sel .s-note{stroke:var(--sel)}
 .tb{stroke:#23262b;stroke-width:.05px}
+
+#props{width:214px!important} .pvw{background:var(--paper,#f5f4ef);border:1px solid var(--line,#444);border-radius:6px;margin:0 0 8px;padding:4px;height:104px} .pvw svg{width:100%;height:100%} .pvw .s-ref,.pvw .s-val{fill:var(--pinc,#0a7a7a)}
+.pi{position:relative} .pinb{position:absolute;right:4px;top:4px;background:transparent;border:0;color:var(--muted,#888);cursor:pointer;font-size:15px;padding:0 3px} .pinb.on{color:#b4ff00} .pinhead{margin:8px 2px 2px;font-size:11px;text-transform:uppercase;letter-spacing:.06em}

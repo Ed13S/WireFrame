@@ -24,6 +24,7 @@
     OPAMP: { t: 'OA', pins: ['1', '2', '3', '4', '5'] }, COMP: { t: 'OA', pins: ['1', '2', '3', '4', '5'], comp: true },
     G_AND: { t: 'GATE', f: 'and', pins: ['1', '2', '3'] }, G_NAND: { t: 'GATE', f: 'nand', pins: ['1', '2', '3'] }, G_OR: { t: 'GATE', f: 'or', pins: ['1', '2', '3'] }, G_NOR: { t: 'GATE', f: 'nor', pins: ['1', '2', '3'] }, G_XOR: { t: 'GATE', f: 'xor', pins: ['1', '2', '3'] }, G_XNOR: { t: 'GATE', f: 'xnor', pins: ['1', '2', '3'] },
     G_NOT: { t: 'GATE', f: 'not', pins: ['1', '2'] }, G_BUF: { t: 'GATE', f: 'buf', pins: ['1', '2'] }, G_SCHMITT: { t: 'GATE', f: 'not', pins: ['1', '2'] },
+    BRIDGE: { t: 'MACRO', pins: ['1', '2', '3', '4'], parts: [{ as: 'D', pins: ['1', '3'] }, { as: 'D', pins: ['2', '3'] }, { as: 'D', pins: ['4', '1'] }, { as: 'D', pins: ['4', '2'] }] },
     NE555: { t: '555', pins: ['1', '2', '3', '4', '5', '6', '7', '8'] }, REG_LINEAR: { t: 'REG', pins: ['1', '2', '3'] }, AMS1117: { t: 'REG', pins: ['3', '1', '2'] }
   };
   const quad = (f, g, vcc, gnd) => ({ t: 'QUAD', f, gates: g, vcc, gnd });
@@ -41,7 +42,10 @@
   A.simTable = () => Object.keys(M).filter(k => !M[k].gates && A.LIB[k]).map(k => { const d = A.LIB[k]; return k + ' = ' + M[k].t + ' [' + M[k].pins.map(n => { const p = d.pins.find(q => q.n === n); return p ? (p.name || n) : n; }).join(', ') + ']'; }).join('\n');
   function custom(inst, d) { const sm = d.sim; if (!sm || !M[sm.as] || M[sm.as].gates) return null; const base = M[sm.as], pins = (sm.pins || []).slice(0, base.pins.length).map(x => { const p = d.pins.find(q => String(q.n) === String(x)) || d.pins.find(q => (q.name || '').toUpperCase() === String(x).toUpperCase()); return p ? p.n : null; });
     if (pins.length < base.pins.length || pins.some(x => !x)) return null; return Object.assign({}, base, { pins }); }
-  A.simModel = (inst) => { const d = A.def(inst.def); if (!d) return null; if (A.isMCU && A.isMCU(inst)) return { t: 'MCU', pins: d.pins.map(p => p.n) }; const cm = d.sim && custom(inst, d); if (cm) return cm; let m = M[inst.def] || (d.of && M[d.of]);
+  /* parts made of other parts (App.def.sub = [{as:'D', pins:['1','~a'], value:'1N4007'}...]); '~name' pins are internal nodes */
+  const bridgeOf = (inst, d) => { if (!/bridge|^DB1\d\d|^KBP|^GBU|^MB\d/i.test(inst.def + ' ' + d.name) || /H-?bridge|driver/i.test(d.name + ' ' + (d.desc || ''))) return null; const pl = d.pins.find(p => p.name === '+'), mi = d.pins.find(p => p.name === '-'), ac = d.pins.filter(p => /^(~|AC)/i.test(p.name || '')); if (!pl || !mi || ac.length !== 2) return null;
+    return { t: 'MACRO', pins: d.pins.map(p => p.n), parts: [[ac[0].n, pl.n], [ac[1].n, pl.n], [mi.n, ac[0].n], [mi.n, ac[1].n]].map(pp => ({ as: 'D', pins: pp })) }; };
+  A.simModel = (inst) => { const d = A.def(inst.def); if (!d) return null; if (d.sub && d.sub.length) return { t: 'MACRO', pins: d.pins.map(p => p.n), parts: d.sub }; if (!M[inst.def]) { const br = bridgeOf(inst, d); if (br) return br; } if (A.isMCU && A.isMCU(inst)) return { t: 'MCU', pins: d.pins.map(p => p.n) }; const cm = d.sim && custom(inst, d); if (cm) return cm; let m = M[inst.def] || (d.of && M[d.of]);
     if (!m) { const hit = KI.find(([re]) => re.test(inst.def)); if (hit) { m = Object.assign({}, hit[1]); if (m.byName) { const nm = byName(inst, m.byName); if (nm.every(Boolean)) m.pins = nm; else m = null; }
         if (m && m.auto) { const isP = /PNP|PMOS|P-Channel|Q_P/i.test(inst.def + ' ' + (d.desc || '')); m.s = isP ? -1 : 1; } } }
     return m || null; };
@@ -61,8 +65,9 @@
     const alone = (inst, pn) => { const ni = pinNode[inst.id + ':' + pn]; const net = nets[[...nodeOf.entries()].find(([, v]) => v === ni)[0]]; return net.pins.length + net.powerPins.length <= 1 && !net.wires.length && !net.labels.length; };
     const nodeFloat = () => k++;
     Sim.names = []; nets.forEach((n, i) => Sim.names[nodeOf.get(i)] = n.name);
-    A.doc.parts.forEach(inst => { const d = A.def(inst.def); if (!d || d.power || (inst.ref || '').startsWith('#')) return; const m = A.simModel(inst); if (!m) { warn.push(`${inst.ref} (${d.name}) is not simulated yet and is treated as not connected.`); return; }
-      const nd = pn => { const x = pinNode[inst.id + ':' + pn]; return x === undefined ? 0 : x; };
+    A.doc.parts.forEach(inst0 => { const d = A.def(inst0.def); if (!d || d.power || (inst0.ref || '').startsWith('#')) return; const m0 = A.simModel(inst0); if (!m0) { warn.push(`${inst0.ref} (${d.name}) is not simulated yet and is treated as not connected.`); return; }
+      const inner = {}; (m0.t === 'MACRO' ? m0.parts.map(sp => ({ m: Object.assign({}, M[sp.as], { pins: sp.pins }), v: sp.value })) : [{ m: m0 }]).forEach(sp => { const m = sp.m; const inst = sp.v !== undefined ? Object.assign({}, inst0, { value: sp.v, sim: inst0.sim || (inst0.sim = {}) }) : inst0;
+      const nd = pn => { if (String(pn)[0] === '~') { if (inner[pn] === undefined) inner[pn] = nodeFloat(); return inner[pn]; } const x = pinNode[inst.id + ':' + pn]; return x === undefined ? 0 : x; };
       const el = { inst, m, t: m.t, n: (m.pins || []).map(nd), keys: (m.pins || []).map(pn => inst.id + ':' + pn), st: {}, val: inst.value };
       const st = inst.sim || (inst.sim = {});
       switch (m.t) {
@@ -93,7 +98,8 @@
         case '555': el.q = false; el.out = 0; break;
         case 'REG': { const nm = (inst.value || '') + ' ' + d.name; const mm = /(78|79)(\d\d)|(\d)[.V](\d)/.exec(nm); el.vset = /3\.3|33/.test(nm) ? 3.3 : /7812|12/.test(nm) ? 12 : /7809|9V/.test(nm) ? 9 : /7806|6V/.test(nm) ? 6 : 5; el.drop = 1.5; el.vo = 0; break; }
       }
-      E.push(el); });
+      E.push(el); }); });
+    Sim.nodes = k;
     // power symbols named like a voltage act as an ideal supply unless a real source already drives that net
     const rail = A.railVolts;
     const railNotes = []; nets.forEach((net, i) => { const nd = nodeOf.get(i); if (nd === 0 || !net.powerPins.length) return; const vv = rail(net.name); if (vv === null) return; if (E.some(e => (e.t === 'V' || e.t === 'VAC') && e.n.includes(nd))) return;

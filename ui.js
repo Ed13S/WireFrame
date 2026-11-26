@@ -86,8 +86,8 @@
   function libOpen(on) { document.body.classList.toggle('libopen', on); if (on) { const q = $('#q'); if (q) { q.focus(); q.select(); } } }
   A.libOpen = libOpen; $('#bAdd').onclick = () => libOpen(!document.body.classList.contains('libopen')); $('#bLibX').onclick = () => libOpen(false);
   $('#q').addEventListener('keydown', e => { if (e.key === 'Escape') { libOpen(false); svg.focus(); } });
-  $('#quick').onclick = e => { const b = e.target.closest('[data-q]'); if (b) { libOpen(false); A.startPlacing(b.dataset.q); } };
-  $('#partList').addEventListener('click', e => { if (e.target.closest('.pi')) setTimeout(() => libOpen(false), 0); });
+  if ($('#quick')) $('#quick').onclick = e => { const b = e.target.closest('[data-q]'); if (b) { libOpen(false); A.startPlacing(b.dataset.q); } };
+  $('#partList').addEventListener('click', e => { if (e.target.closest('.pi') && !e.target.closest('.pinb')) setTimeout(() => libOpen(false), 0); });
   function setTool(t) { S.tool = t; if (t !== 'place') S.placing = null; if (t !== 'wire') S.draft = null;
     $$('.tool').forEach(b => b.classList.toggle('on', b.dataset.tool === t)); svg.style.cursor = t === 'select' ? 'default' : 'crosshair';
     $('#hint').textContent = { select: 'Click to select, drag to move, drag on empty space to box-select. Click a wire to highlight its net.', wire: 'Click to start a wire, click again to bend or finish. Click on a pin to connect. Esc or double-click to stop.', label: 'Click on a wire or pin to name the net.', text: 'Click to place a note.', nc: 'Click a pin to add a no-connect flag (X). Click a flag again to remove it. Esc to stop.', place: 'Click to place. R rotates, M mirrors, Esc stops placing.' }[t] || ''; A.render(); }
@@ -195,8 +195,8 @@
     else if (k === 'r') rotateSel(1); else if (k === 'x') { rotateSel(2); mirrorSel(); } else if (k === 'y') mirrorSel();
     else if (k === 'm' || k === 'g') startGrab();
     else if (k === 'c') { copySel(); paste(); startGrab(); }
-    else if (k === 'e') { const it = sel1(); if (it && it.def) { propsOpen(true); focus('#pRef'); } else if (it && it.text !== undefined) askText('Edit text', it.text, v => { it.text = v; A.commit(); }); else if (!it) A.sheetDialog && A.sheetDialog(); }
-    else if (k === 'v') { propsOpen(true); focus('#pVal'); } else if (k === 'u') { propsOpen(true); focus('#pRef'); }
+    else if (k === 'e') { e.preventDefault(); const it = sel1(); if (it && it.def) { propsOpen(true); focus('#pRef'); } else if (it && it.text !== undefined) askText('Edit text', it.text, v => { it.text = v; A.commit(); }); else if (!it) A.sheetDialog && A.sheetDialog(); }
+    else if (k === 'v') { e.preventDefault(); propsOpen(true); focus('#pVal'); } else if (k === 'u') { e.preventDefault(); propsOpen(true); focus('#pRef'); }
     else if (k === 'f' || k === 'home') A.fit(); else if (k === '?' || (e.shiftKey && k === '/')) A.shortcutsDialog && A.shortcutsDialog();
     else if (k === 'n' && S.tool === 'wire' && S.draft) finishWire();
     else if (k === 'n') cycleGrid();
@@ -212,10 +212,13 @@
       ['Title:title', 'Auth:author', 'Date:date'].forEach(s => { const [i, k] = s.split(':'); $('#m' + i).onchange = e => { A.doc.meta[k] = e.target.value; A.commit(); }; }); return; }
     if (sel.length > 1) { b.innerHTML = `<p>${sel.length} items selected.</p><button id="pDel" class="danger">Delete selection</button>`; $('#pDel').onclick = deleteSel; return; }
     const it = sel[0];
-    if (it.def) { const df = A.def(it.def) || {}; b.innerHTML = `<div class="row"><label>Part</label><span>${esc(df.name || it.def)}</span></div>${df.desc ? `<p class="note">${esc(df.desc)}</p>` : ''}${df.power ? '' : `<div class="row"><label>Ref</label><input id="pRef" value="${esc(it.ref || '')}"></div>`}<div class="row"><label>${df.power ? 'Net' : 'Value'}</label><input id="pVal" value="${esc(it.value || '')}"></div>${df.power ? '' : `<div class="row"><label>Footprint</label><input id="pFp" placeholder="e.g. Resistor_THT:R_Axial_DIN0207…" value="${esc(it.footprint || '')}"></div>`}
+    if (it.def) { const df = A.def(it.def) || {}; b.innerHTML = `<div id="pPrev" class="pvw"></div><div class="row"><label>Part</label><span>${esc(df.name || it.def)}</span></div>${df.desc ? `<p class="note">${esc(df.desc)}</p>` : ''}${df.power ? '' : `<div class="row"><label>Ref</label><input id="pRef" value="${esc(it.ref || '')}"></div>`}<div class="row"><label>${df.power ? 'Net' : 'Value'}</label><input id="pVal" value="${esc(it.value || '')}"></div>${df.power ? '' : `<div class="row"><label>Footprint</label><input id="pFp" placeholder="e.g. Resistor_THT:R_Axial_DIN0207…" value="${esc(it.footprint || '')}"></div>`}
         <div class="row"><button id="pRot">Rotate</button><button id="pMir">Mirror</button><button id="pDel" class="danger">Delete</button></div>${df.custom ? '<div class="row"><button id="pEdit">Edit this part…</button></div>' : ''}
         <div class="note">${df.pins.length} pins${df.pins.length < 17 ? ': ' + df.pins.map(p => esc(p.n + (p.name ? ' ' + p.name : ''))).join(', ') : ''}</div>`;
       const r = $('#pRef'); if (r) r.onchange = e => { it.ref = e.target.value; A.commit(); }; $('#pVal').onchange = e => { it.value = e.target.value; A.commit(); }; const fp = $('#pFp'); if (fp) fp.onchange = e => { it.footprint = e.target.value.trim(); A.commit(); };
+      const drawPrev = () => { const bb = A.bbox(df), w = bb.x1 - bb.x0 + 11, h = bb.y1 - bb.y0 + 8, rf = $('#pRef'), vv = $('#pVal'), tmp = Object.assign({}, it, { rot: 0 });
+        $('#pPrev').innerHTML = `<svg viewBox="${bb.x0 - 3} ${bb.y0 - 4} ${w} ${h}" preserveAspectRatio="xMidYMid meet"><g class="pvg">${A.symbolInner(df, tmp)}<text class="s-ref" x="${bb.x1 + 1.5}" y="${bb.y0 + .6}" font-size="1.6">${esc(rf ? rf.value : it.ref || '')}</text><text class="s-val" x="${bb.x1 + 1.5}" y="${bb.y0 + 2.8}" font-size="1.5">${esc(vv ? vv.value : it.value || '')}</text></g></svg>`; };
+      drawPrev(); ['#pRef', '#pVal'].forEach(q => { const el = $(q); if (el) el.addEventListener('input', drawPrev); });
       $('#pRot').onclick = () => rotateSel(1); $('#pMir').onclick = mirrorSel; $('#pDel').onclick = deleteSel; const pe = $('#pEdit'); if (pe) pe.onclick = () => A.editPart && A.editPart(df.id); if (A.simProps) A.simProps(it, b); return; }
     if (it.text !== undefined) { b.innerHTML = `<div class="row"><label>Text</label><input id="pTxt" value="${esc(it.text)}"></div><button id="pDel" class="danger">Delete</button>`; $('#pTxt').onchange = e => { it.text = e.target.value; A.commit(); }; $('#pDel').onclick = deleteSel; return; }
     b.innerHTML = `<p>Wire (${it.p[0]}, ${it.p[1]}) to (${it.p[2]}, ${it.p[3]})</p><button id="pDel" class="danger">Delete</button>`; $('#pDel').onclick = deleteSel;
