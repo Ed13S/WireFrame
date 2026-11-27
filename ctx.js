@@ -27,6 +27,7 @@
     arr.push({ t: 'Duplicate', k: A.isMac ? '⌘D' : 'Ctrl+D', off: !has || view === 'build', f: () => keyDown('d', { ctrlKey: !A.isMac, metaKey: A.isMac }) }, { t: 'Delete', k: 'Del', off: !has, f: () => click('#bDel') }, '-',
       { t: 'Bring to front', off: !has, f: () => A.zOrder(sel, 'front') }, { t: 'Bring forward', off: !has, f: () => A.zOrder(sel, 'forward') }, { t: 'Send backward', off: !has, f: () => A.zOrder(sel, 'backward') }, { t: 'Send to back', off: !has, f: () => A.zOrder(sel, 'back') }, '-',
       { t: 'Properties', k: 'E', off: !has, f: () => { A.propsOpen(true); } }, { t: 'Add part…', k: 'A', f: () => A.libOpen(true) });
+    if (view === 'build' && [...A.bsel()].some(k => String(k).startsWith('j:'))) { const back = (A.doc.bw || []).some(j => new Set(A.bsel()).has('j:' + j.id) && j.back); arr.push({ t: back ? 'Bring wire in front of parts' : 'Send wire behind parts', f: () => { (A.doc.bw || []).forEach(j => { if (new Set(A.bsel()).has('j:' + j.id)) j.back = !back; }); A.doc.master = 'build'; A.commit(); } }); }
     if (view === 'build') arr.push('-', { t: 'Tidy wires (straighten & avoid parts)', f: () => A.tidyWires() });
     if (view !== 'build') arr.push({ t: 'Fit to window', k: 'F', f: () => keyDown('f') }); menu(e.clientX, e.clientY, arr); };
   /* ---- jump from Check messages ---- */
