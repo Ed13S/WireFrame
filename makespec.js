@@ -225,7 +225,7 @@
     const spec = A.fromMakeSpec(circuit);
     A.projects.newProject(spec.title);
     const res = await A.buildFromSpec(spec, { replace: true });
-    A.markUnusedPinsNC(); A.fit(); A.runCheck();
+    A.markUnusedPinsNC(); A.fit(); A.fitContent(); setTimeout(A.fitContent, 500); A.runCheck();
     const m = $('#msgs');
     if (m) m.insertAdjacentHTML('afterbegin', `<div class="msg ok">Imported “${esc(spec.title)}” from MakeSpec.${spec.notes ? ' ' + esc(spec.notes) : ''}</div>` + (res.warnings || []).map(w => `<div class="msg bad">${esc(w)}</div>`).join(''));
     A.toast('Imported from MakeSpec');
@@ -243,6 +243,19 @@
     return true;
   };
 
+  // Zoom to the circuit itself (used when embedded, where the sheet would be tiny).
+  A.fitContent = () => {
+    if (!document.documentElement.classList.contains('embed')) return;
+    const d = A.doc; let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+    d.parts.forEach(i => { const b = A.worldBBox(i); x0 = Math.min(x0, b.x0); y0 = Math.min(y0, b.y0); x1 = Math.max(x1, b.x1); y1 = Math.max(y1, b.y1); });
+    d.wires.forEach(w => { x0 = Math.min(x0, w.p[0], w.p[2]); y0 = Math.min(y0, w.p[1], w.p[3]); x1 = Math.max(x1, w.p[0], w.p[2]); y1 = Math.max(y1, w.p[1], w.p[3]); });
+    if (x0 > x1) return;
+    const r = document.getElementById('svg').getBoundingClientRect(), pad = 10;
+    const w = x1 - x0 + 2 * pad, h = y1 - y0 + 2 * pad, sc = Math.max(1.2, Math.min(18, (r.width / w), (r.height / h)));
+    A.S.view = { sc, tx: (r.width - (x1 - x0) * sc) / 2 - x0 * sc, ty: (r.height - (y1 - y0) * sc) / 2 - y0 * sc };
+    A.applyView();
+  };
+  if (/[?&]embed=1\b/.test(location.search)) document.documentElement.classList.add('embed');
   addEventListener('hashchange', () => { A.importFromHash(); });
   A.isMakeSpecCircuit = valid;
 })();

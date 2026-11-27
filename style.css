@@ -196,3 +196,7 @@ body.propsopen #props{display:block}
 #bAdd.accent{background:#b4ff00;color:#000;font-weight:700}
 .s-txt,.s-pin,.s-val,.s-ref,.s-lbl,.s-note{stroke-width:.07px;paint-order:stroke;stroke-linejoin:round} .s-txt,.s-pin,.s-val,.s-ref{stroke:var(--pinc)} .s-lbl{stroke:var(--txt)} .s-note{stroke:var(--fg)} .sel .s-txt,.sel .s-ref,.sel .s-val,.sel .s-lbl,.sel .s-note{stroke:var(--sel)}
 .tb{stroke:#23262b;stroke-width:.05px}
+
+/* embedded view (MakeSpec): schematic only */
+html.embed #top,html.embed #lib,html.embed #props,html.embed #status,html.embed #codePanel{display:none!important}
+html.embed #work{grid-template-columns:minmax(0,1fr)!important}
