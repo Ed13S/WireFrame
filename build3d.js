@@ -29,6 +29,8 @@
     else if (k === 'elec') { leg(0, 0, 3); leg(U, 0, 3); m.cyl('#2a3b66', .5 * U, 0, 3.2, y0 + 3, y0 + 14, 'y', 24); m.cyl('#cfd6e6', .5 * U, 0, 3.22, y0 + 3, y0 + 14, 'y', 8); }
     else if (k === 'ceramic') { leg(0, 0, 3); leg(2 * U, 0, 3); m.cyl('#e5a53a', U, 0, 3.4, y0 + 3, y0 + 8, 'y', 24); }
     else if (k === 'buzzer') { leg(0, 0, 3); leg(2 * U, 0, 3); m.cyl('#1c1c1c', U, 0, 6, y0 + 3, y0 + 12, 'y', 28); }
+    else if (k === 'to220') { L.forEach(l => leg(l.x * U, 0, 2.2)); const w = Math.max(...L.map(l => l.x)); m.box('#1d1d1d', -.5 * U, y0 + 3, -.9 * U, (w + .5) * U, y0 + 12, .3 * U); m.box('#aeb4bc', -.5 * U, y0 + 12, -.9 * U, (w + .5) * U, y0 + 17, -.6 * U); }
+    else if (k === 'sip') { const w = Math.max(...L.map(l => l.x)); L.forEach(l => leg(l.x * U, 0, 2)); m.box('#222831', -.4 * U, y0 + 2, -1.1 * U, (w + .4) * U, y0 + 7, .3 * U); }
     else if (k === 'to92') { L.forEach(l => leg(l.x * U, 0, 3)); m.cyl('#1d1d1d', U, 0, 2.5, y0 + 3, y0 + 8, 'y', 18); }
     else if (k === 'pot') { L.forEach(l => leg(l.x * U, 0, 2)); m.box('#2465b0', -.5 * U, y0 + 2, -2.2 * U, 2.5 * U, y0 + 9, 0); m.cyl('#dddddd', U, -1.2 * U, 3.2, y0 + 9, y0 + 14, 'y', 20); }
     else if (k === 'push') { L.forEach(l => leg(l.x * U, l.y * U, 2)); m.box('#2e2e33', -.2 * U, y0 + 2, -.2 * U, 2.2 * U, y0 + 6, 3.2 * U); m.cyl('#d03a3a', U, 1.5 * U, 1.8, y0 + 6, y0 + 9.5, 'y', 18); }

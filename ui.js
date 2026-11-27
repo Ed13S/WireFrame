@@ -68,7 +68,7 @@
   function rotateSel(dir) { if (A.mode === 'build' && !S.placing && A.buildKey) { A.buildKey(noop, 'r'); return; } if (S.placing) { S.rot = (S.rot + 1) % 4; drawOverlay(); return; } let ch = false;
     A.doc.parts.forEach(p => { if (S.sel.has(p.id)) { p.rot = ((p.rot || 0) + (dir || 1) + 4) % 4; ch = true; } }); if (ch) A.commit(); }
   function mirrorSel() { if (A.mode === 'build') { A.toast('Mirror is for the schematic. On the breadboard, use Rotate.', 2200); return; } if (S.placing) { S.mir ^= 1; drawOverlay(); return; } let ch = false; A.doc.parts.forEach(p => { if (S.sel.has(p.id)) { p.mir = p.mir ? 0 : 1; ch = true; } }); if (ch) A.commit(); }
-  function copySel() { const d = A.doc, s = S.sel; if (!s.size) return; S.clip = JSON.stringify({ parts: d.parts.filter(p => s.has(p.id)), wires: d.wires.filter(p => s.has(p.id)), labels: d.labels.filter(p => s.has(p.id)), notes: d.notes.filter(p => s.has(p.id)), nc: (d.nc || []).filter(p => s.has(p.id)) }); A.toast('Copied'); }
+  function copySel() { const d = A.doc, s = S.sel; if (!s.size) return; S.clip = JSON.stringify({ parts: d.parts.filter(p => s.has(p.id)), wires: d.wires.filter(p => s.has(p.id)), labels: d.labels.filter(p => s.has(p.id)), notes: d.notes.filter(p => s.has(p.id)), nc: (d.nc || []).filter(p => s.has(p.id)) }); try { navigator.clipboard.writeText('WIREFRAME:' + S.clip); } catch (e) {} A.toast('Copied'); }
   function paste(dx, dy) { if (!S.clip) return; const c = JSON.parse(S.clip), ids = []; dx = dx === undefined ? 2 : dx; dy = dy === undefined ? 2 : dy;
     c.parts.forEach(p => { const n = Object.assign({}, p, { id: A.id('p'), x: p.x + dx, y: p.y + dy }); const df = A.def(n.def); if (df && !(n.ref || '').startsWith('#')) n.ref = A.nextRef(df.ref); A.doc.parts.push(n); ids.push(n.id); });
     c.wires.forEach(w => { const n = { id: A.id('w'), p: [w.p[0] + dx, w.p[1] + dy, w.p[2] + dx, w.p[3] + dy] }; A.doc.wires.push(n); ids.push(n.id); });
@@ -99,10 +99,10 @@
   A.startPlacing = async (id) => { const df = await A.ensureDef(id); if (!df) return A.toast('Could not load that part'); S.placing = id; S.rot = 0; S.mir = 0; setTool('place'); $$('.pi').forEach(e => e.classList.toggle('on', e.dataset.id === id)); };
 
   function askText(title, init, cb, multi) {
-    const host = $('#modalHost'); host.innerHTML = `<div class="back"><div class="modal" style="width:min(420px,100%)"><header><b>${esc(title)}</b></header><div class="mb"><input id="askIn" value="${esc(init || '')}" autocomplete="off"></div><footer><button id="askNo">Cancel</button><button id="askOk" class="accent">OK</button></footer></div></div>`;
+    const host = $('#modalHost'); host.innerHTML = `<div class="back"><div class="modal" style="width:min(420px,100%)"><header><b>${esc(title)}</b></header><div class="mb">${multi ? `<textarea id="askIn" rows="8" style="width:100%">${esc(init || '')}</textarea>` : `<input id="askIn" value="${esc(init || '')}" autocomplete="off">`}</div><footer><button id="askNo">Cancel</button><button id="askOk" class="accent">OK</button></footer></div></div>`;
     const inp = $('#askIn'); inp.focus(); inp.select(); const close = () => host.innerHTML = '';
     const ok = () => { const v = inp.value.trim(); close(); if (v) cb(v); }; $('#askOk').onclick = ok; $('#askNo').onclick = close;
-    inp.onkeydown = e => { if (e.key === 'Enter') ok(); if (e.key === 'Escape') close(); e.stopPropagation(); };
+    inp.onkeydown = e => { if (e.key === 'Enter' && !(multi && !e.ctrlKey && !e.metaKey)) ok(); if (e.key === 'Escape') close(); e.stopPropagation(); };
   }
   A.askText = askText;
 
@@ -178,7 +178,7 @@
     if ($('#modalHost').firstChild) return; const k = e.key.toLowerCase(), mod = e.ctrlKey || e.metaKey;
     if (e.code === 'Space') { S.space = true; svg.style.cursor = 'grab'; e.preventDefault(); return; }
     if (mod && k === 'z') { e.preventDefault(); e.shiftKey ? A.redo() : A.undo(); return; } if (mod && k === 'y') { e.preventDefault(); A.redo(); return; }
-    if (mod && k === 'c') { copySel(); return; } if (mod && k === 'x') { copySel(); deleteSel(); return; } if (mod && k === 'v') { e.preventDefault(); paste(); return; }
+    if (mod && k === 'c') { copySel(); return; } if (mod && k === 'x') { copySel(); deleteSel(); return; } if (mod && k === 'v') { e.preventDefault(); const go = () => paste(); try { navigator.clipboard.readText().then(t => { if (t && t.startsWith('WIREFRAME:')) S.clip = t.slice(10); go(); }, go); } catch (err) { go(); } return; }
     if (mod && k === 'd') { e.preventDefault(); copySel(); paste(); return; } if (mod && k === 'a') { e.preventDefault(); A.select([...A.doc.parts, ...A.doc.wires, ...A.doc.labels, ...A.doc.notes, ...(A.doc.nc || [])].map(x => x.id)); return; }
     if (e.ctrlKey && k === 'f1') { e.preventDefault(); A.shortcutsDialog && A.shortcutsDialog(); return; }
     if (mod && k === 's') { e.preventDefault(); A.saveFile(); return; } if (mod) return;

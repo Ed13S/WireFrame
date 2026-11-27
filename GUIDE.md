@@ -106,10 +106,22 @@ A Mac app opened from the Dock doesn't see keys set in Terminal, so start it fro
 
 **KiCad and other tools:** File → Import KiCad (`.kicad_sch`, `.kicad_sym`), Export KiCad schematic, netlist, SPICE and BOM. Note: the exports follow KiCad 8's format but have not been checked in every KiCad version, so open them once before relying on them.
 
+**Right-click menu:** bring to front, send to back, forward/backward, and in Build view **Tidy wires**.
+
+**Bendable jumpers (Build view):** select a wire and drag the orange dots to bend it. A cross appears at a 90° corner and a dashed line at a straight 180°. Double-click a corner to remove it. Info panel buttons: Straight, Auto-route (goes around parts), Arc. New wires route around parts automatically.
+
+**Errors and no-connects:** click an error in Check to jump to it. **Auto no-connect** (or Shift+Q) flags every unconnected pin for you.
+
+**Your own parts:** + New part has an **Inside (simulation)** tab to build a part from other parts, and a footprint field. The AI sets a footprint on parts it makes; **Not sure? Ask AI** in the Info panel suggests one and explains the choice. The footprint decides the 3D body (DIP, TO-220, TO-92, pin header).
+
+**AC source:** type the value as `12V 50Hz` (also `5V 1kHz`).
+
+**Copy and paste between the app and the website:** Ctrl/Cmd+C copies circuits to the system clipboard, so Ctrl/Cmd+V works in another window or the other app (the browser may ask permission to read the clipboard).
+
 **Copy to Word/Docs:** Copy picture and PNG/SVG exports have a transparent background so they take on the page colour.
 
 ## 4. Tips for class
 Set a lesson, have students open a Lesson, predict the voltage, then press Play to check. Delete the LED resistor to see burnout. Students can save their `.json` and hand it in.
 
 ## 5. Known limits
-Negative supply rails (e.g. -12 V) in Build view, dragging jumper end points, and wire-current animation in Build view are untested. No Servo/I2C/WiFi sketch libraries. A simplified kids' mode is not built yet.
+Negative supply rails (e.g. -12 V) in Build view, and wire-current animation in Build view are untested. No Servo/I2C/WiFi sketch libraries. A simplified kids' mode is not built yet.

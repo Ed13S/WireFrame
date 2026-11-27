@@ -12,6 +12,8 @@
   const FREE = new Set(['BAT', 'VDC', 'VAC', 'IDC', 'MOTOR', 'SERVO', 'SPEAKER', 'LAMP', 'TRANSFORMER', 'RELAY', 'JACK_DC', 'USB_C', 'VM', 'AM']);
   const num = s => /^\d+$/.test(String(s)) ? +s : NaN;
   B.kind = (d) => { const id = d.id, n = d.pins.length, c = d.cat || '';
+    const fp = d.footprint || '', evenNum = n % 2 === 0 && d.pins.every(p => !isNaN(num(p.n))); // AI/custom parts: the footprint tells us the real package
+    if (fp && !BOARDS.has(id) && !d.builtin) { if (/DIP|SOIC|SO-?\d|SSOP|TSSOP/i.test(fp) && evenNum) return 'dip'; if (/TO-?220|TO-?247|TO-?3P/i.test(fp) && n === 3) return 'to220'; if (/TO-?92|SOT-?23|TO-?126/i.test(fp) && n === 3) return 'to92'; if (/SIP|PinHeader|Pin_Socket|Connector_Pin/i.test(fp) && n >= 2) return 'sip'; }
     if (BOARDS.has(id)) return 'board'; if (id === 'SW_PUSH') return 'push'; if (id === 'POT' || id === 'RTRIM') return 'pot'; if (id === 'LED') return 'led'; if (id === 'SEG7') return 'seg';
     if (id === 'BUZZER') return 'buzzer'; if (id === 'MOTOR') return 'motor'; if (id === 'BAT' || id === 'VDC') return 'battery';
     if (FREE.has(id)) return 'free'; if (id === 'R' || id === 'R_US') return 'res'; if (/^(D|D_SCHOTTKY|D_ZENER)$/.test(id)) return 'diode'; if (id === 'CP') return 'elec'; if (id === 'C' || id === 'CVAR') return 'ceramic';
@@ -26,7 +28,7 @@
     else if (k === 'led' || k === 'elec') { push(P[0].n, 0, 0); push(P[1].n, 1, 0); } else if (k === 'ceramic') { push(P[0].n, 0, 0); push(P[1].n, 2, 0); }
     else if (k === 'buzzer') { push(P[0].n, 0, 0); push(P[1].n, 2, 0); }
     else if (k === 'push') { push(P[0].n, 0, 0); push(P[0].n, 2, 0); push(P[1].n, 0, 3); push(P[1].n, 2, 3); }
-    else if (k === 'to92' || k === 'pot') { P.forEach((p, i) => push(p.n, i, 0)); }
+    else if (k === 'to92' || k === 'to220' || k === 'pot') { P.forEach((p, i) => push(p.n, i, 0)); }
     else if (k === 'battery' || k === 'motor' || k === 'free') { P.forEach((p, i) => push(p.n, i * 2, 0)); }
     else if (k === 'dip') { const sorted = P.slice().sort((a, b) => num(a.n) - num(b.n)), h = sorted.length / 2; sorted.forEach((p, i) => i < h ? push(p.n, i, 0) : push(p.n, sorted.length - 1 - i, 3)); }
     else if (k === 'seg') { const sorted = P.slice(); const h = Math.ceil(sorted.length / 2); sorted.forEach((p, i) => i < h ? push(p.n, i, 0) : push(p.n, i - h, 3)); }
