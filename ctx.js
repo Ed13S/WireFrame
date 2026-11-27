@@ -16,6 +16,7 @@
     m.onclick = e => { const b = e.target.closest('button'); if (!b || b.disabled) return; m.remove(); items[+b.dataset.i].f(); };
     const away = ev => { if (!m.contains(ev.target)) { m.remove(); removeEventListener('pointerdown', away, true); removeEventListener('keydown', away, true); } };
     setTimeout(() => { addEventListener('pointerdown', away, true); addEventListener('keydown', away, true); }, 0); }
+  A.ctxMenu = menu;
   A.ctxShow = (e, view) => {
     let id = null; const t = document.elementFromPoint(e.clientX, e.clientY);
     if (view === 'build') { const g = t && t.closest && t.closest('[data-id],[data-j],[data-s]'); id = g ? (g.dataset.id && g.dataset.id !== 'ghost' ? g.dataset.id : g.dataset.j ? 'j:' + g.dataset.j : g.dataset.s ? 's:' + g.dataset.s : null) : null;
@@ -42,4 +43,8 @@
   A.autoNC = () => { const d = A.doc; d.nc = d.nc || []; let n = 0;
     A.erc().forEach(m => { if (/^Unconnected pin/.test(m.text) && m.x !== undefined && !d.nc.some(c => Math.abs(c.x - m.x) < .3 && Math.abs(c.y - m.y) < .3)) { d.nc.push({ id: A.id('q'), x: m.x, y: m.y }); n++; } });
     if (n) A.commit(); A.toast(n ? 'Added ' + n + ' no-connect flag' + (n === 1 ? '' : 's') : 'No unconnected pins to flag', 1800); return n; };
+  /* right-click a part in the parts list: place, pin, delete your own parts */
+  document.addEventListener('contextmenu', e => { const pi = e.target.closest && e.target.closest('.pi[data-id]'); if (!pi) return; e.preventDefault(); const id = pi.dataset.id, mine = (A.custom || []).some(c => c.id === id), d = A.def(id); if (!d) return;
+    const used = (A.doc.parts || []).some(p => p.def === id);
+    A.ctxMenu(e.clientX, e.clientY, [{ t: 'Place on sheet', f: () => pi.click() }, ...(mine ? ['-', { t: 'Delete this part', f: () => { if (used) return A.toast('This part is used on the sheet. Delete those first.', 3000); if (!confirm('Delete "' + (d.name || id) + '" from My parts? This cannot be undone.')) return; A.removeCustom(id); A.refreshLib && A.refreshLib(); A.toast('Deleted ' + (d.name || id)); } }] : [])]); });
 })();

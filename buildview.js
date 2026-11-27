@@ -184,7 +184,9 @@
   A.on(what => { if (A._syncing) return; if (A.mode === 'build') { if (what === 'load') { V.sel = new Set(); setTimeout(A.bfit, 20); } B.render(); } });
   /* stage-level controls */
   A.setMode = async (m) => { if (m === A.mode) return; A.simStop && A.simState && A.simState.active && A.simStop(); V.draft = null; V.sel = new Set(); S.sel = new Set();
-    if (m === 'build') { if (A.doc.master !== 'build') A.buildFromSch(); A.mode = 'build'; } else { if (A.doc.master === 'build') await A.schFromBuild(); A.mode = 'sch'; }
+    const keep = JSON.stringify(A.exportDoc());
+    try { if (m === 'build') { if (A.doc.master !== 'build') A.buildFromSch(); A.mode = 'build'; } else { if (A.doc.master === 'build') await A.schFromBuild(); A.mode = 'sch'; } }
+    catch (err) { /* never get stuck in a view: put the sheet back as it was and switch anyway */ console.error(err); try { A.importDoc(JSON.parse(keep)); } catch (e2) {} A.mode = m; A._syncing = false; A.toast('Could not convert between the views (' + (err && err.message || 'error') + '). Your circuit was kept as it was.', 4500); }
     $('#svg').toggleAttribute('hidden', A.mode === 'build'); bsvg.toggleAttribute('hidden', A.mode !== 'build'); document.body.dataset.mode = A.mode; document.querySelectorAll('[data-mode]').forEach(b => b.classList.toggle('on', b.dataset.mode === A.mode));
     $('#hint').textContent = A.mode === 'build' ? 'Drag from any hole to run a jumper wire. Pick a part on the left to place it. Click a part to move it. R rotates.' : '';
     if (A.mode === 'build') { applyV(); setTimeout(A.bfit, 10); B.render(); } else { A.render(); A.fit(); } A.renderProps(); };
