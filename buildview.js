@@ -103,7 +103,9 @@
     gParts.innerHTML = p; gBack.innerHTML = wiresSVG('back'); gWires.innerHTML = wiresSVG(); drawOver(); };
   function drawOver() { let o = ''; const [mx, my] = V.mouse;
     if (A.mode === 'build' && S.placing) { const df = A.def(S.placing); if (df) { const inst = { id: 'ghost', def: S.placing, ref: A.nextRef(df.ref || 'U'), value: df.value || df.name, bb: { x: mx, y: my, rot: V.rot } }; o += `<g opacity=".6" transform="translate(${mx} ${my}) rotate(${V.rot * 90})">${B.look(inst, null)}</g>`; } }
-    if (V.draft) { const a = V.draft.a, b = V.mouse; o += `<path d="${jumperPath(a, b)}" stroke="#d8731a" stroke-width=".36" fill="none" stroke-linecap="round" opacity=".85"/><circle cx="${a[0]}" cy="${a[1]}" r=".3" fill="#d8731a"/>`; }
+    if (V.draft) { const dr = V.draft, end = dr.free || V.mouse, tj = { a: dr.a, b: end, via: (dr.via || []).slice() }, gd = dr.guide || [];
+      gd.forEach(g => o += g.x != null ? `<path d="M${g.x} -500V500" stroke="#3b7dff" stroke-width=".06" opacity=".7"/>` : `<path d="M-500 ${g.y}H500" stroke="#3b7dff" stroke-width=".06" opacity=".7"/>`);
+      o += `<path d="${B.jPath(tj)}" stroke="#d8731a" stroke-width=".36" fill="none" stroke-linecap="round" stroke-linejoin="round" opacity=".85"/><circle cx="${dr.a[0]}" cy="${dr.a[1]}" r=".3" fill="#d8731a"/>` + (dr.via || []).map(p => `<circle cx="${p[0]}" cy="${p[1]}" r=".25" fill="#fff" stroke="#d8731a" stroke-width=".1"/>`).join(''); }
     if (V.guide) { const g = V.guide; if (g.k === '90') o += `<path d="M${g.p[0] - 1.2} ${g.p[1]}H${g.p[0] + 1.2}M${g.p[0]} ${g.p[1] - 1.2}V${g.p[1] + 1.2}" stroke="#d8731a" stroke-width=".08"/><rect x="${g.p[0] - .45}" y="${g.p[1] - .45}" width=".9" height=".9" fill="none" stroke="#d8731a" stroke-width=".08"/><text x="${g.p[0] + .8}" y="${g.p[1] - .6}" font-size=".9" font-weight="700" fill="#d8731a">90°</text>`; else o += `<path d="M${g.a[0]} ${g.a[1]}L${g.b[0]} ${g.b[1]}" stroke="#d8731a" stroke-width=".08" stroke-dasharray=".4 .3"/><text x="${(g.a[0] + g.b[0]) / 2 + .6}" y="${(g.a[1] + g.b[1]) / 2 - .6}" font-size=".9" font-weight="700" fill="#d8731a">Straight</text>`; }
     if (V.hover) o += `<circle cx="${V.hover[0]}" cy="${V.hover[1]}" r=".34" fill="none" stroke="#d8731a" stroke-width=".1"/>`;
     gOver.innerHTML = o; }
@@ -130,11 +132,12 @@
       $('#bsV').onchange = e => { s.volts = Math.max(.1, +e.target.value || 5); A.commit(); }; $('#bsDel').onclick = bdelete; } }
   function bdelete() { const d = A.doc; V.sel.forEach(k => { if (k.startsWith('j:')) d.bw = d.bw.filter(j => 'j:' + j.id !== k); else if (k.startsWith('s:')) d.bsup = d.bsup.filter(s => 's:' + s.id !== k); else { d.parts = d.parts.filter(p => p.id !== k); } }); V.sel = new Set(); S.sel = new Set(); A.commit(); A.renderProps(); }
   A.bdelete = bdelete;
+  A._V = V; A._onHole = onHole;
   const hitOf = t => { const g = t.closest && t.closest('[data-id],[data-j],[data-s]'); if (!g) return null; if (g.dataset.id) return g.dataset.id === 'ghost' ? null : g.dataset.id; if (g.dataset.j) return 'j:' + g.dataset.j; return 's:' + g.dataset.s; };
   bsvg.addEventListener('pointerdown', e => { bsvg.focus({ preventScroll: true }); bsvg.setPointerCapture(e.pointerId);
     if (e.button === 1 || e.button === 2 || S.space) { pan = { x: e.clientX, y: e.clientY, tx: V.view.tx, ty: V.view.ty, right: e.button === 2, moved: false }; return; } if (e.button !== 0) return;
     const [gx, gy] = toG(e.clientX, e.clientY), sp = snapPt(gx, gy); V.mouse = sp;
-    if (V.draft) { finishJumper(sp); return; }
+    if (V.draft) { if (onHole(sp)) finishJumper(sp); else { if (V.draft.free) V.draft.via.push(V.draft.free.slice()); V.draft.drag = false; B.render(); } return; }
     if (S.tool === 'place' && S.placing) { const df = A.def(S.placing), inst = A.placePart(S.placing, 10 + A.doc.parts.length, 10, 0, 0); inst.bb = { x: sp[0], y: sp[1], rot: V.rot }; A.doc.master = 'build'; A.commit(); A.bselect([inst.id]); return; }
     const hv = e.target.closest && e.target.closest('.jv,.jm'); if (hv) { const j = (A.doc.bw || []).find(x => x.id === hv.parentNode.dataset.jh); if (j) { let i = +hv.dataset.i; if (hv.classList.contains('jm')) { const P = [j.a, ...(j.via || []), j.b]; j.via = j.via || []; j.via.splice(i, 0, [Math.round((P[i][0] + P[i + 1][0]) ), Math.round((P[i][1] + P[i + 1][1]))].map(v => v / 2)); } V.drag = { type: 'via', j, i, moved: false }; return; } }
     const wb = e.target.closest && e.target.closest('[data-j]'); if (wb && !e.shiftKey && S.tool !== 'wire' && e.button === 0) { const j = (A.doc.bw || []).find(x => x.id === wb.dataset.j); if (j && V.sel.has('j:' + j.id)) { /* grab a selected wire anywhere to bend it */ const [px, py] = toG(e.clientX, e.clientY), P = [j.a, ...(j.via || []), j.b]; let bi = 0, bd = 1e9; for (let i = 0; i < P.length - 1; i++) { const ax = P[i][0], ay = P[i][1], dx = P[i + 1][0] - ax, dy = P[i + 1][1] - ay, L2 = dx * dx + dy * dy || 1, t = Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / L2)), d = Math.hypot(ax + dx * t - px, ay + dy * t - py); if (d < bd) { bd = d; bi = i; } } j.via = j.via || []; j.via.splice(bi, 0, [Math.round(px * 2) / 2, Math.round(py * 2) / 2]); V.drag = { type: 'via', j, i: bi, moved: false }; return; } }
@@ -142,17 +145,18 @@
     if (id && id.startsWith('j:') && document.elementsFromPoint) { /* a wire lying over a push button must not block it */ for (const el of document.elementsFromPoint(e.clientX, e.clientY)) { const g = el.closest && el.closest('[data-id]'); const pi = g && g.dataset.id !== 'ghost' && (A.doc.parts.find(p => p.id === g.dataset.id)); if (pi && pi.def === 'SW_PUSH') { id = pi.id; break; } } }
     if (id && S.tool !== 'wire') { if (A.simPointer && !id.includes(':') && A.simPointer(id, 'down')) return; if (!V.sel.has(id) && !e.shiftKey) A.bselect([id]); else if (e.shiftKey) { V.sel.has(id) ? V.sel.delete(id) : V.sel.add(id); A.bselect([...V.sel]); }
       if (!id.startsWith('j:')) V.drag = { type: 'move', x0: gx, y0: gy, moved: false, orig: null, id }; return; }
-    if (onHole(sp) && !id) { V.draft = { a: sp, t0: Date.now(), x0: e.clientX, y0: e.clientY, drag: true }; B.render(); return; }
-    if (S.tool === 'wire' && onHole(sp)) { V.draft = { a: sp, drag: false }; B.render(); return; }
+    if (onHole(sp) && !id) { V.draft = { a: sp, via: [], t0: Date.now(), x0: e.clientX, y0: e.clientY, drag: true }; B.render(); return; }
+    if (S.tool === 'wire' && onHole(sp)) { V.draft = { a: sp, via: [], drag: false }; B.render(); return; }
     A.bselect([]); });
-  function finishJumper(b) { const a = V.draft.a; if (Math.hypot(a[0] - b[0], a[1] - b[1]) < .5) { V.draft = null; B.render(); return; } if (!onHole(b)) { A.toast('Drop the wire end on a hole or a pin', 1600); V.draft = null; B.render(); return; }
-    const d = A.doc; d.bw = d.bw || []; const j = { id: 'j' + (d.seq++), a: a.slice(), b: b.slice() }; d.bw.push(j); const c = B.connectivity(); const g = c.groups.find(gr => gr.some(k => { const t = k[0]; return false; }));
+  function finishJumper(b) { const a = V.draft.a, via = V.draft.via || []; if (!via.length && Math.hypot(a[0] - b[0], a[1] - b[1]) < .5) { V.draft = null; B.render(); return; } if (!onHole(b)) { A.toast('Drop the wire end on a hole or a pin', 1600); V.draft = null; B.render(); return; }
+    const d = A.doc; d.bw = d.bw || []; const j = { id: 'j' + (d.seq++), a: a.slice(), b: b.slice() }; if (via.length) j.via = via.map(p => p.slice()); d.bw.push(j); const c = B.connectivity(); const g = c.groups.find(gr => gr.some(k => { const t = k[0]; return false; }));
     const ra = c.find(B.target(a[0], a[1])); const has = (pre) => c.groups.some(gr => gr.some(k => k.startsWith(pre)) && c.find(gr[0]) === ra);
     const tag = c.groups.find(gr => c.find(gr[0]) === ra) || []; const sups = {}; (d.bsup || []).forEach(s => sups[s.id] = s);
     if (tag.some(k => k.startsWith('U:') && k.endsWith(':-'))) j.color = '#222'; else if (tag.some(k => k.startsWith('U:') && k.endsWith(':+'))) j.color = '#d33'; else j.color = JC[(d.bw.length - 1) % JC.length];
-    B.autoRoute(j); V.draft = null; d.master = 'build'; A.commit(); A.bselect(['j:' + j.id]); }
+    if (!via.length) B.autoRoute(j); V.draft = null; d.master = 'build'; A.commit(); A.bselect(['j:' + j.id]); }
   bsvg.addEventListener('pointermove', e => { if (pan) { const dx = e.clientX - pan.x, dy = e.clientY - pan.y; if (Math.abs(dx) + Math.abs(dy) > 3) pan.moved = true; V.view.tx = pan.tx + dx; V.view.ty = pan.ty + dy; applyV(); return; }
-    const [gx, gy] = toG(e.clientX, e.clientY); V.mouse = snapPt(gx, gy); V.hover = (!V.drag && onHole(V.mouse) && (S.tool === 'wire' || V.draft || true)) ? V.mouse : null; $('#stPos').textContent = V.mouse.join(', ');
+    const [gx, gy] = toG(e.clientX, e.clientY); V.mouse = snapPt(gx, gy);
+    if (V.draft) { const dr = V.draft, last = (dr.via && dr.via.length ? dr.via[dr.via.length - 1] : dr.a); dr.guide = []; if (onHole(V.mouse)) dr.free = null; else { let x = gx, y = gy; if (Math.abs(gx - last[0]) < .7) { x = last[0]; dr.guide.push({ x }); } if (Math.abs(gy - last[1]) < .7) { y = last[1]; dr.guide.push({ y }); } dr.free = [x, y]; } } V.hover = (!V.drag && onHole(V.mouse) && (S.tool === 'wire' || V.draft || true)) ? V.mouse : null; $('#stPos').textContent = V.mouse.join(', ');
     const d = V.drag; if (d && d.type === 'via') { d.moved = true; const j = d.j, P = [j.a, ...j.via, j.b], pv = P[d.i], nx = P[d.i + 2]; let x = gx, y = gy; V.guide = null;
       const c1 = [pv[0], nx[1]], c2 = [nx[0], pv[1]], dd = c => Math.hypot(c[0] - gx, c[1] - gy), cs = [c1, c2].sort((p, q) => dd(p) - dd(q))[0];
       const ux = nx[0] - pv[0], uy = nx[1] - pv[1], L2 = ux * ux + uy * uy, t = L2 ? ((gx - pv[0]) * ux + (gy - pv[1]) * uy) / L2 : 0, pr = [pv[0] + ux * t, pv[1] + uy * t];
@@ -162,7 +166,7 @@
       d.moved = true; const dx = Math.round(gx - d.x0), dy = Math.round(gy - d.y0); d.orig.forEach(([o, x, y]) => { o.x = x + dx; o.y = y + dy; }); B.render(); return; }
     drawOver(); });
   bsvg.addEventListener('pointerup', e => { if (pan) { const was = pan; pan = null; if (was.right && !was.moved && !V.draft && !S.placing) A.ctxShow(e, 'build'); return; } if (A.simPointer) A.simPointer(null, 'up');
-    if (V.draft && V.draft.drag && Math.hypot(e.clientX - V.draft.x0, e.clientY - V.draft.y0) > 6) { const [gx, gy] = toG(e.clientX, e.clientY); finishJumper(snapPt(gx, gy)); }
+    if (V.draft && V.draft.drag && Math.hypot(e.clientX - V.draft.x0, e.clientY - V.draft.y0) > 6) { const [gx, gy] = toG(e.clientX, e.clientY), q = snapPt(gx, gy); if (onHole(q)) finishJumper(q); else { if (V.draft.free) V.draft.via.push(V.draft.free.slice()); V.draft.drag = false; B.render(); } }
     else if (V.draft && V.draft.drag) { V.draft.drag = false; }
     const d = V.drag; V.drag = null; V.guide = null; if (d && d.moved) { A.doc.master = 'build'; A.commit(); } });
   bsvg.addEventListener('dblclick', e => { const hv = e.target.closest && e.target.closest('.jv'); if (hv) { const j = (A.doc.bw || []).find(x => x.id === hv.parentNode.dataset.jh); if (j) { j.via.splice(+hv.dataset.i, 1); A.doc.master = 'build'; A.commit(); } return; } const id = hitOf(e.target); if (id && !id.includes(':')) { const i = $('#pVal'); if (i) { i.focus(); i.select(); } } });
