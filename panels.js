@@ -62,6 +62,7 @@
     svg() { A.download(base() + '.svg', A.exportSVG({ tight: true }), 'image/svg+xml'); },
     net() { A.download(base() + '-netlist.txt', A.netlistText()); },
     libexp() { if (!A.custom.length) return A.toast('You have no custom parts yet'); A.download('my-parts.json', JSON.stringify(A.custom, null, 1), 'application/json'); },
+    dmg() { window.open(window.DMG_URL || 'https://github.com/Ed13S/WireFrame', '_blank', 'noopener'); },
     libimp() { $('#fileIn').dataset.mode = 'lib'; $('#fileIn').click(); },
     example() { A.examplesDialog && A.examplesDialog(); }
   };
@@ -70,6 +71,7 @@
     if (/\.kicad_sch$/i.test(f.name)) A.importKicadSch(t, f.name); else if (/\.kicad_sym$/i.test(f.name)) { if (A.importKicadSym) A.importKicadSym(t, f.name); else A.toast('KiCad import is not available'); } else A.openText(t, f.name); };
   const menu = $('#fileMenu'); $('#bFile').onclick = e => { e.stopPropagation(); menu.hidden = !menu.hidden; };
   document.addEventListener('click', () => menu.hidden = true);
+  if (window.electronAI || /Electron/i.test(navigator.userAgent)) { const m = $('#mDmg'); if (m) m.hidden = true; }
   menu.onclick = e => { const b = e.target.closest('[data-act]'); if (b) { menu.hidden = true; (acts[b.dataset.act] || A.interopActs[b.dataset.act])(); } };
   addEventListener('dragover', e => e.preventDefault()); addEventListener('drop', async e => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (!f) return; const t = await f.text(); /\.kicad_sch$/i.test(f.name) ? A.importKicadSch(t, f.name) : /\.kicad_sym$/i.test(f.name) ? A.importKicadSym && A.importKicadSym(t, f.name) : A.openText(t, f.name); });
 

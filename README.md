@@ -1,34 +1,35 @@
 # WireFrame
 
-A KiCad-style schematic editor plus a Tinkercad-style breadboard Build view (two-way sync), with a live simulator, Arduino/ESP32 sketches with Serial Monitor, 3D export (GLB/OBJ/STL), KiCad import/export, a huge parts library (built-in parts plus the KiCad symbol libraries), a part creator, and AI that can make parts and whole circuits. Free and open source. Runs in any browser; no install, no build step, no API key in the page.
+A free circuit editor for students. Draw a schematic the way KiCad does, then switch to **Build** and see the same circuit on a breadboard like Tinkercad. Press **Play** to simulate it.
 
-See GUIDE.md for the full guide.
+- Schematic and breadboard views stay in sync
+- Live simulator: LEDs glow, meters read, switches and buttons work, AC sources, microcontroller sketches with a Serial Monitor
+- Thousands of parts (built in plus the KiCad symbol libraries), and a part creator, including parts built from other parts
+- Footprints: browse about 12,000 KiCad footprints
+- Optional AI helper that can make parts and whole circuits
+- Import and export KiCad files, netlists, SPICE, parts lists, PNG/SVG and 3D models (GLB, OBJ, STL)
+- Free. No account, no ads, no API key needed to use it
 
-## Use it
-Open `index.html` through any static web server (`python3 -m http.server`), or host it:
+## Get it
 
-**GitHub Pages:** put these files in a repo, Settings → Pages → deploy from branch → `/ (root)`. Install as an app from the browser menu (it's a PWA, works offline).
+**In the browser (easiest):** open the WireFrame website. In Chrome or Edge you can install it as an app from the address bar, and it then works offline.
 
-**Render (static site):** New → Static Site → connect the repo → publish directory `.` → no build command.
+**Mac app:** download **WireFrame.dmg** (File menu → *Download Mac app*, or from this repo), open it and drag WireFrame into Applications. The app is not signed by Apple, so the first time: open it, then go to System Settings → Privacy & Security → scroll down → **Open Anyway**. Step by step with pictures-in-words is in [GUIDE.md](GUIDE.md).
 
-## AI without pasting a key
-Three ways, pick one:
-1. **Copy/paste (default):** WireFrame writes a prompt, you paste it into any AI chat, paste the reply back. Nothing to set up.
-2. **Your own proxy:** deploy `proxy/` as a free Render Web Service, set `OPENROUTER_API_KEY` (from openrouter.ai/keys) there, optionally `MODEL`, then set `window.AI_PROXY_URL = "https://your-app.onrender.com/api/ai"` in `config.js`. Students never see the key. Set `ALLOWED_ORIGIN` to your site URL.
-3. **Mac app:** start it from Terminal with `OPENROUTER_API_KEY=sk-or-... /Applications/WireFrame.app/Contents/MacOS/WireFrame` (a Dock launch can't see Terminal variables). Step by step in GUIDE.md.
+## Your files
+Save sheets as **`.wire`** files (File → Save). They carry everything: the schematic, the breadboard layout, the title block and any parts you made. Open them on any computer, or in the Mac app, with File → Open or by dragging the file onto the page.
 
-## Mac app
-Step-by-step download and install is in GUIDE.md. Easiest: install from the browser (Chrome/Edge install icon), or run the **Build Mac app** workflow under the repo's Actions tab and download the `.dmg` (unsigned: right-click → Open). Or:
-```
-cd electron && npm install && npm start     # run it
-npm run dist                                 # build a .dmg in electron/dist
-```
+## Learn it
+Start with **Lessons** in the app, then read [GUIDE.md](GUIDE.md). Press `Ctrl/Cmd+F1` in the app for the keyboard shortcuts.
 
-## Simulator
-Press Play. Click switches and buttons. Supports resistors, capacitors, inductors, diodes, LEDs, BJTs, MOSFETs, op-amps, logic gates, 555, regulators, relays, motors, lamps, meters. Power symbols named like `+9V` act as supplies.
+## Hosting it yourself
+You only need this if you are the teacher or developer setting it up. Everything is plain files with no build step.
 
-## Contributing
-Parts live in `parts.js`/`parts_ic.js`; lesson circuits in `examples.js`. Pull requests welcome.
+- **GitHub Pages:** Settings → Pages → deploy from branch → `/ (root)`.
+- **Render (static site):** New → Static Site → publish directory `.` → no build command.
+- **Run locally:** `python3 -m http.server`, then open `http://localhost:8000`.
+- **AI:** by default WireFrame writes a prompt you paste into any AI chat and paste the reply back. To make the AI buttons work directly, deploy `proxy/` as a Render Web Service with `OPENROUTER_API_KEY`, set `ALLOWED_ORIGIN` to your site, then put its address in `config.js`. In the Mac app, paste your own key once in the AI box. Details in GUIDE.md.
+- **Mac app:** `cd electron && npm install && npm start` to run, `npm run dist` to build the `.dmg`, or use the **Build Mac app** workflow under Actions. Point `DMG_URL` in `config.js` at wherever you publish the `.dmg`.
 
-## Licence
-Source-available: free to use as provided, not to copy or modify; improvements are welcome as pull requests (see `LICENSE` and `CONTRIBUTING.md`). KiCad libraries: see `lib/LICENSE-KiCad-libraries.md`.
+## Contributing and licence
+Source-available: free to use as provided, not to copy or modify. Improvements are welcome as pull requests; see `LICENSE` and `CONTRIBUTING.md`. KiCad libraries: see `lib/LICENSE-KiCad-libraries.md`. Other credits: `THIRD_PARTY.md`.
