@@ -6,6 +6,7 @@
     try { ok = await A.projects.restore(); } catch (e) { console.error(e); }
     if (!ok) { try { await A.loadExample('led'); } catch (e) { console.error(e); A.emit('load'); } A.projects.adoptCurrent(); }
     A.refreshLib(); setTimeout(A.fit, 60);
+    if (A.importFromHash) await A.importFromHash();
   })();
   addEventListener('resize', () => A.render());
   if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) navigator.serviceWorker.register('sw.js').catch(() => {});

@@ -117,7 +117,8 @@ ${q}`;
         out.forEach(({ p, o }) => { const ex = p.x + o[0] * 2, ey = p.y + o[1] * 2; wire(p.x, p.y, ex, ey); A.doc.labels.push({ id: A.id('l'), x: ex, y: ey, text: n.name, flip: o[0] < 0 ? 1 : 0 }); }); });
     };
     const want = nets.map(n => new Set(n.pins.map(p => p.inst.ref + '.' + p.n)));
-    const verify = () => { const bad = new Set(); A.nets().forEach(g => { const got = new Set(g.pins.map(p => p.inst.ref + '.' + p.n)); if (!got.size) return; if (!want.some(w => w.size === got.size && [...w].every(x => got.has(x)))) got.forEach(x => bad.add(x)); }); return bad; };
+    const wantedPins = new Set(); want.forEach(w => w.forEach(x => wantedPins.add(x)));
+    const verify = () => { const bad = new Set(); A.nets().forEach(g => { const got = new Set(g.pins.map(p => p.inst.ref + '.' + p.n)); if (!got.size) return; if (got.size === 1 && !wantedPins.has([...got][0])) return; if (!want.some(w => w.size === got.size && [...w].every(x => got.has(x)))) got.forEach(x => bad.add(x)); }); return bad; };
     const labelsFor = new Set(); route(labelsFor); let bad = verify();
     for (let pass = 0; pass < 2 && bad.size; pass++) { nets.forEach(n => { if (n.pins.some(p => bad.has(p.inst.ref + '.' + p.n))) labelsFor.add(n.name); }); route(labelsFor); bad = verify(); }
     if (bad.size) { labelsFor.add('*'); route(labelsFor); bad = verify(); if (bad.size) warn.push('Some nets may not match the description. Run Check and inspect.'); }
@@ -156,10 +157,11 @@ ${q}`;
       return kind === 'circuit' ? A.circuitPrompt(t, $('#aiMod').checked && hasDoc ? A.docToSpec() : null) : kind === 'part' ? A.partPrompt(t) : A.askPrompt(t); };
     const finish = async (reply) => { const out = $('#aiOut');
       if (kind === 'ask') { out.innerHTML = '<div style="white-space:pre-wrap;color:var(--fg)">' + esc(reply) + '</div>'; return; }
-      const spec = parseJSON(reply); if (!spec) { out.textContent = 'I could not read that reply as JSON. Ask Claude to “reply with the JSON object only”.'; return; }
+      let spec = parseJSON(reply); if (spec && kind === 'circuit' && A.isMakeSpecCircuit && A.isMakeSpecCircuit(spec)) { try { spec = A.fromMakeSpec(spec); } catch (e) { out.textContent = e.message; return; } }
+      if (!spec) { out.textContent = 'I could not read that reply as JSON. Ask Claude to “reply with the JSON object only”.'; return; }
       try { if (kind === 'part') { const d = spec.sides ? window.buildBox('My:' + spec.name.replace(/\s+/g, '_'), spec.name, 'My parts', spec.ref || 'U', spec.value || spec.name, spec.sides) : null;
           if (!d) { out.textContent = 'The reply did not contain pins for a part.'; return; } d.desc = spec.desc || ''; if (spec.sim && spec.sim.as) d.sim = spec.sim; A.addCustom(d); A.L.cat = 'My parts'; A.refreshLib(); host.innerHTML = ''; A.toast('Added “' + d.name + '” to My parts. Click it to place it.'); return; }
-        const res = await A.buildFromSpec(spec, { replace: true }); host.innerHTML = ''; A.fit(); A.runCheck(); const m = $('#msgs'); m.insertAdjacentHTML('afterbegin', (res.notes ? `<div class="msg ok">${esc(res.notes)}</div>` : '') + res.warnings.map(w => `<div class="msg bad">${esc(w)}</div>`).join('')); A.toast('Circuit built. Tweak it like any other sheet.'); }
+        const res = await A.buildFromSpec(spec, { replace: true }); host.innerHTML = ''; if (spec._fromMakeSpec && A.markUnusedPinsNC) A.markUnusedPinsNC(); A.fit(); A.runCheck(); const m = $('#msgs'); m.insertAdjacentHTML('afterbegin', (res.notes ? `<div class="msg ok">${esc(res.notes)}</div>` : '') + res.warnings.map(w => `<div class="msg bad">${esc(w)}</div>`).join('')); A.toast('Circuit built. Tweak it like any other sheet.'); }
       catch (e) { out.textContent = 'Could not build that: ' + e.message; } };
     if (mode === 'paste') { $('#aiCopy').onclick = async () => { const p = promptNow(); if (!p) return; try { await navigator.clipboard.writeText(p); $('#aiOut').textContent = 'Request copied (' + Math.round(p.length / 1000) + ' KB). Paste it into Claude.'; } catch (e) { const ta = $('#aiReply'); ta.value = p; ta.select(); $('#aiOut').textContent = 'Copy was blocked, so the request is in the box below. Copy it from there.'; } };
       $('#aiBuild').onclick = () => { const r = $('#aiReply').value.trim(); if (!r) { $('#aiOut').textContent = 'Paste Claude’s reply first.'; return; } finish(r); }; }

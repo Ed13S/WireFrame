@@ -17,6 +17,12 @@ Three ways, pick one:
 2. **Your own proxy:** deploy `proxy/` as a free Render Web Service, set `OPENROUTER_API_KEY` (from openrouter.ai/keys) there, optionally `MODEL`, then set `window.AI_PROXY_URL = "https://your-app.onrender.com/api/ai"` in `config.js`. Students never see the key. Set `ALLOWED_ORIGIN` to your site URL.
 3. **Mac app:** start it from Terminal with `OPENROUTER_API_KEY=sk-or-... /Applications/WireFrame.app/Contents/MacOS/WireFrame` (a Dock launch can't see Terminal variables). Step by step in GUIDE.md.
 
+## Import from MakeSpec
+
+[MakeSpec](https://github.com/Ed13S/MakeSpec) turns a project idea into a build spec that includes a wiring diagram. Its **Open in WireFrame** button sends that circuit here as a new project (nothing you have open is overwritten). Parts are matched to the library by name (resistors, LEDs, ESP32 DevKit, ...), pins by number, name or common alias, and anything unknown becomes a generic box with the pins MakeSpec listed. Pins MakeSpec left unconnected are marked no-connect.
+
+You can also paste the circuit JSON from MakeSpec's **Copy for WireFrame** button into AI Assistant > Make a circuit > reply box. The format is `{ "format": "makespec-circuit", "version": 1, components, connections }`; see `makespec.js`.
+
 ## Mac app
 Step-by-step download and install is in GUIDE.md. Easiest: install from the browser (Chrome/Edge install icon), or run the **Build Mac app** workflow under the repo's Actions tab and download the `.dmg` (unsigned: right-click → Open). Or:
 ```
