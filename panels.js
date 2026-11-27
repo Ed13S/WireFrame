@@ -44,7 +44,7 @@
   /* ---------- file helpers ---------- */
   A.download = (name, data, type) => { const blob = data instanceof Blob ? data : new Blob([data], { type: type || 'text/plain' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000); };
   const base = () => (A.doc.meta.title || 'schematic').replace(/[^\w\-]+/g, '_').replace(/^_+|_+$/g, '') || 'schematic';
-  A.saveFile = () => { A.download(base() + '.schematic.json', JSON.stringify(A.exportDoc(), null, 1), 'application/json'); A.toast('Saved ' + base() + '.schematic.json'); };
+  A.saveFile = () => { A.download(base() + '.wire', JSON.stringify(A.exportDoc(), null, 1), 'application/x-wireframe+json'); A.toast('Saved ' + base() + '.wire. Open it in WireFrame on any device.'); };
   A.openText = (text, name) => { try { const o = JSON.parse(text);
       if (Array.isArray(o) || (o.pins && o.draw)) { const arr = Array.isArray(o) ? o : [o]; arr.forEach(p => { if (p.pins && p.draw) A.addCustom(p); }); A.refreshLib(); A.toast('Imported ' + arr.length + ' part(s) into My parts'); return; }
       A.importDoc(o); A.toast('Opened ' + (name || 'sheet')); } catch (e) { A.toast('That file is not a WireFrame sheet'); } };
@@ -65,7 +65,7 @@
     libimp() { $('#fileIn').dataset.mode = 'lib'; $('#fileIn').click(); },
     example() { A.examplesDialog && A.examplesDialog(); }
   };
-  $('#fileIn').accept = '.json,.kicad_sym,.kicad_sch,application/json';
+  $('#fileIn').accept = '.wire,.json,.kicad_sym,.kicad_sch,application/json';
   $('#fileIn').onchange = async e => { const f = e.target.files[0]; e.target.value = ''; if (!f) return; const t = await f.text();
     if (/\.kicad_sch$/i.test(f.name)) A.importKicadSch(t, f.name); else if (/\.kicad_sym$/i.test(f.name)) { if (A.importKicadSym) A.importKicadSym(t, f.name); else A.toast('KiCad import is not available'); } else A.openText(t, f.name); };
   const menu = $('#fileMenu'); $('#bFile').onclick = e => { e.stopPropagation(); menu.hidden = !menu.hidden; };

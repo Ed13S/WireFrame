@@ -12,6 +12,10 @@ app.whenReady().then(() => {
     const full = path.normalize(path.join(__dirname, 'app', p)); if (!full.startsWith(path.join(__dirname, 'app'))) return new Response('forbidden', { status: 403 }); return net.fetch(pathToFileURL(full).toString()); });
   win();
 });
+const openWire = (w, f) => { try { const t = fs.readFileSync(f, 'utf8'); w.webContents.executeJavaScript('App.openText(' + JSON.stringify(t) + ',' + JSON.stringify(path.basename(f)) + ')'); } catch (e) {} };
+let pendingFile = process.argv.find(a => /\.wire$/i.test(a)) || null;
+app.on('open-file', (e, f) => { e.preventDefault(); const w = BrowserWindow.getAllWindows()[0]; if (w) openWire(w, f); else pendingFile = f; });
+app.on('browser-window-created', (e, w) => w.webContents.on('did-finish-load', () => { if (pendingFile) { const f = pendingFile; pendingFile = null; setTimeout(() => openWire(w, f), 800); } }));
 // The OpenRouter key is pasted once inside the app and kept encrypted (macOS Keychain-backed), never in the page or the repo.
 // OPENROUTER_API_KEY in the environment still works and takes priority.
 const keyFile = () => path.join(app.getPath('userData'), 'ai-key.bin');

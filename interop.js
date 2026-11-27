@@ -11,12 +11,12 @@
   /* ----- netlists / BOM ----- */
   A.kicadNetlist = () => { const nets = A.nets(), parts = insts().filter(p => !(A.def(p.def).power) && !(p.ref || '').startsWith('#'));
     let o = '(export (version "E")\n  (design (source ' + qs(base() + '.wireframe') + ') (tool "WireFrame EDA 1.0.1"))\n  (components\n';
-    parts.forEach(p => { const d = A.def(p.def); o += `    (comp (ref ${qs(p.ref)}) (value ${qs(p.value || d.name)}) (libsource (lib "WireFrame") (part ${qs(safe(p.def))}) (description ${qs(d.name)})))\n`; });
+    parts.forEach(p => { const d = A.def(p.def); o += `    (comp (ref ${qs(p.ref)}) (value ${qs(p.value || d.name)}) (footprint ${qs(p.footprint || d.footprint || '')}) (libsource (lib "WireFrame") (part ${qs(safe(p.def))}) (description ${qs(d.name)})))\n`; });
     o += '  )\n  (nets\n'; let code = 1;
     nets.forEach(n => { const pins = n.pins.filter(x => parts.includes(x.inst)); if (!pins.length) return; o += `    (net (code ${code++}) (name ${qs(n.name)})\n` + pins.map(x => `      (node (ref ${qs(x.inst.ref)}) (pin ${qs(x.n)}))`).join('\n') + ')\n'; });
     return o + '  ))\n'; };
-  A.bomCSV = () => { const g = {}; insts().filter(p => !A.def(p.def).power && !(p.ref || '').startsWith('#')).forEach(p => { const d = A.def(p.def), k = (p.value || d.name) + '|' + d.name; (g[k] = g[k] || { value: p.value || d.name, part: d.name, refs: [] }).refs.push(p.ref); });
-    return 'Reference,Qty,Value,Part\n' + Object.values(g).map(r => `"${r.refs.join(' ')}",${r.refs.length},"${r.value}","${r.part}"`).join('\n') + '\n'; };
+  A.bomCSV = () => { const g = {}; insts().filter(p => !A.def(p.def).power && !(p.ref || '').startsWith('#')).forEach(p => { const d = A.def(p.def), k = (p.value || d.name) + '|' + d.name; (g[k] = g[k] || { value: p.value || d.name, part: d.name, fp: p.footprint || d.footprint || '', refs: [] }).refs.push(p.ref); });
+    return 'Reference,Qty,Value,Part,Footprint\n' + Object.values(g).map(r => `"${r.refs.join(' ')}",${r.refs.length},"${r.value}","${r.part}","${r.fp || ''}"`).join('\n') + '\n'; };
   A.spiceNetlist = () => { const nets = A.nets(), name = new Map(); const nm = n => /^(GND|AGND|DGND|PGND|VSS|0V|0)$/i.test(n.name) ? '0' : n.name.replace(/[^\w+\-]/g, '_');
     nets.forEach(n => n.pins.forEach(p => name.set(p.inst.id + '.' + p.n, nm(n)))); let o = '* ' + (A.doc.meta.title || 'WireFrame circuit') + '\n* exported by WireFrame EDA 1.0.1 (starting point: check models before simulating)\n'; const models = new Set(); let k = 0;
     insts().forEach(p => { const d = A.def(p.def); if (d.power || (p.ref || '').startsWith('#')) return; const m = A.simModel && A.simModel(p); const node = i => name.get(p.id + '.' + d.pins[i].n) || ('NC' + (++k)); const r = (p.ref || 'X' + (++k)).replace(/\W/g, ''); const val = p.value || '';

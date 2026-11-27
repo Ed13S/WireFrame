@@ -11,6 +11,7 @@
  },
  "build": {
   "appId": "org.wireframe.app",
+  "fileAssociations": [{ "ext": "wire", "name": "WireFrame sheet", "role": "Editor" }],
   "files": [
    "icon.png",
    "main.js",

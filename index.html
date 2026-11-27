@@ -41,8 +41,8 @@
     <div class="menu"><button id="bFile">File ▾</button>
       <div class="drop" id="fileMenu" hidden>
         <button data-act="new">New sheet</button>
-        <button data-act="open">Open .json…</button>
-        <button data-act="save">Save .json</button>
+        <button data-act="open">Open (.wire, .json, KiCad)…</button>
+        <button data-act="save">Save (.wire)</button>
         <hr>
         <button data-act="png">Export PNG (transparent)</button>
         <button data-act="pngsheet">Export PNG (whole sheet)</button>
@@ -67,7 +67,7 @@
     </div>
     <button id="bTheme" title="Light / dark">Theme</button>
   </nav>
-  <input type="file" id="fileIn" accept=".json,application/json" hidden>
+  <input type="file" id="fileIn" accept=".wire,.json,application/json" hidden>
 </header>
 
 <main id="work">
@@ -118,6 +118,7 @@
 <script src="buildview.js"></script>
 <script src="buildsync.js"></script>
 <script src="build3d.js"></script>
+<script src="fppick.js"></script>
 <script src="ai.js"></script>
 <script src="boot.js"></script>
 </body>

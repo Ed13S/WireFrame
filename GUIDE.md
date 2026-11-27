@@ -106,6 +106,10 @@ A Mac app opened from the Dock doesn't see keys set in Terminal, so start it fro
 
 **KiCad and other tools:** File → Import KiCad (`.kicad_sch`, `.kicad_sym`), Export KiCad schematic, netlist, SPICE and BOM. Note: the exports follow KiCad 8's format but have not been checked in every KiCad version, so open them once before relying on them.
 
+**Moving a sheet between devices:** File → Save (`.wire`) makes WireFrame's own file (the sheet, Build layout, title block and your custom parts). Open it on another computer or in the Mac app with File → Open, or drag it onto the page. In the Mac app, double-clicking a `.wire` file opens it. Older `.json` saves still open.
+
+**Footprints:** in a part's Info panel, **Browse library…** searches all ~12,000 KiCad footprints by name (e.g. `SOIC-16`, `0805`, `PinHeader 1x04`). The KiCad netlist (`.net`) and the BOM now include each part's footprint.
+
 **Right-click menu:** bring to front, send to back, forward/backward, and in Build view **Tidy wires**.
 
 **Bendable jumpers (Build view):** select a wire and drag the orange dots to bend it. A cross appears at a 90° corner and a dashed line at a straight 180°. Double-click a corner to remove it. Info panel buttons: Straight, Auto-route (goes around parts), Arc. New wires route around parts automatically.

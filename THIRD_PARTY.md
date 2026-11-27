@@ -13,3 +13,5 @@
 - **Hershey fonts** (`hershey.js`, off by default): Dr. A. V. Hershey, U.S. National Bureau of Standards; data format by
   James Hurt, Cognition, Inc.; via the MIT-licensed "hersheytext" package.
 - **KiCad symbol libraries** (`lib/`): see `lib/LICENSE-KiCad-libraries.md`.
+
+- **Footprint names** (`fplib.js`): the list of footprint library and footprint names from KiCad's official footprint libraries (github.com/KiCad/kicad-footprints, CC-BY-SA 4.0 with KiCad's library exception). Only names are included, not geometry.
