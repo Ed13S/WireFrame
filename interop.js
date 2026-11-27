@@ -52,7 +52,7 @@
     d.notes.forEach(n => { o += `  (text ${qs(n.text)} (exclude_from_sim no) (at ${X(n.x)} ${X(n.y)} 0) ${eff(1.27, false, 'left')} (uuid ${qs(uuid())}))\n`; });
     insts().forEach(p => { const df = A.def(p.def), a = p.mir ? (p.rot || 0) * 90 : ((4 - (p.rot || 0)) % 4) * 90, pw = df.power;
       o += `  (symbol (lib_id ${qs('WireFrame:' + safe(p.def))}) (at ${X(p.x)} ${X(p.y)} ${a})${p.mir ? ' (mirror y)' : ''} (unit 1) (exclude_from_sim no) (in_bom ${pw ? 'no' : 'yes'}) (on_board ${pw ? 'no' : 'yes'}) (dnp no) (uuid ${qs(uuid())})\n` +
-        `    (property "Reference" ${qs(pw ? '#PWR' + p.id.replace(/\D/g, '') : p.ref)} (at ${X(p.x)} ${X(p.y - 3)} 0) ${eff(1.27, pw)})\n    (property "Value" ${qs(p.value || df.value || df.name)} (at ${X(p.x)} ${X(p.y + 3)} 0) ${eff(1.27)})\n    (property "Footprint" ${qs(p.footprint || "")} (at ${X(p.x)} ${X(p.y)} 0) ${eff(1.27, true)})\n    (property "Datasheet" "" (at ${X(p.x)} ${X(p.y)} 0) ${eff(1.27, true)})\n` +
+        `    (property "Reference" ${qs(pw ? '#PWR' + p.id.replace(/\D/g, '') : p.ref)} (at ${X(p.x)} ${X(p.y - 3)} 0) ${eff(1.27, pw)})\n    (property "Value" ${qs(p.value || df.value || df.name)} (at ${X(p.x)} ${X(p.y + 3)} 0) ${eff(1.27)})\n    (property "Footprint" ${qs(p.footprint || df.footprint || "")} (at ${X(p.x)} ${X(p.y)} 0) ${eff(1.27, true)})\n    (property "Datasheet" "" (at ${X(p.x)} ${X(p.y)} 0) ${eff(1.27, true)})\n` +
         df.pins.map(q => `    (pin ${qs(q.n)} (uuid ${qs(uuid())}))`).join('\n') + '\n  )\n'; });
     return o + '  (sheet_instances (path "/" (page "1")))\n)\n'; };
 

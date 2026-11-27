@@ -16,7 +16,7 @@
   const catalog = () => Object.values(A.LIB).filter(d => !d.kicad).map(d => `${d.id} | ${d.name} | ${d.pins.slice(0, 24).map(p => p.n + '=' + (p.name || '·')).join(' ')}${d.pins.length > 24 ? ' …' : ''}`).join('\n');
   const SPEC_DOC = `{
   "title": "short title",
-  "newParts": [   // only for parts NOT in the catalog. "sides" lists pins as "number:name" top to bottom (left/right) or left to right (top/bottom)
+  "newParts": [   // only for parts NOT in the catalog. Add a "footprint" (a real KiCad footprint library id such as "Package_DIP:DIP-8_W7.62mm") when you are sure of the package. "sides" lists pins as "number:name" top to bottom (left/right) or left to right (top/bottom)
     { "id": "LM3914", "name": "LM3914 LED bar driver", "ref": "U", "value": "LM3914", "sides": { "l": ["5:SIG","4:RLO"], "r": ["1:LED1","18:LED2"], "t": ["3:V+"], "b": ["2:V-"] },
       "sim": { "as": "OPAMP", "pins": ["name or number of the part's pin for each model pin"] } }   // sim: pick the closest built-in model so the part works in the simulator; see the model list below
   ],
@@ -50,7 +50,7 @@ ${catalog()}
 Circuit to design:
 ${desc}`;
   A.partPrompt = (desc) => `You are a parts-library assistant inside a schematic editor. Create the schematic symbol for the part described below and reply with ONE JSON object only (no markdown fences, no other text):
-{ "name": "LM358 dual op-amp (DIP-8)", "ref": "U", "value": "LM358", "desc": "one line description",
+{ "name": "LM358 dual op-amp (DIP-8)", "ref": "U", "value": "LM358", "desc": "one line description", "footprint": "Package_DIP:DIP-8_W7.62mm",
   "sides": { "l": ["2:1IN-","3:1IN+","6:2IN-","5:2IN+"], "r": ["1:1OUT","7:2OUT"], "t": ["8:V+"], "b": ["4:V-"] },
   "sim": { "as": "OPAMP", "pins": ["2","3","1","8","4"] } }
 Pins are written "number:name". Left and right pins are listed top to bottom, top and bottom pins left to right. Use the real datasheet pin numbers and names for the exact package named. Put inputs on the left, outputs on the right, power on top, ground on the bottom. Include every pin of the package (use "NC" as the name for no-connect pins).
@@ -78,7 +78,7 @@ ${q}`;
     opts = opts || {}; const warn = [];
     (spec.newParts || []).forEach(np => { try { if (!np.id) np.id = 'AI:' + np.name; if (A.LIB[np.id] && A.LIB[np.id].builtin) return;
       let d; if (np.sides) d = window.buildBox(np.id, np.name || np.id, 'My parts', np.ref || 'U', np.value || np.name, np.sides); else if (np.pins && np.draw) d = { id: np.id, name: np.name, ref: np.ref || 'U', value: np.value || np.name, pins: np.pins, draw: np.draw }; else return;
-      d.desc = np.desc || ''; if (np.sim && np.sim.as) d.sim = np.sim; A.addCustom(d); } catch (e) { warn.push('Could not make part ' + np.id); } });
+      d.desc = np.desc || ''; if (np.footprint) d.footprint = String(np.footprint); if (np.sim && np.sim.as) d.sim = np.sim; A.addCustom(d); } catch (e) { warn.push('Could not make part ' + np.id); } });
     const specParts = (spec.parts || []).filter(p => p && p.ref && p.part); if (!specParts.length) throw new Error('The reply had no parts.');
     if (opts.replace !== false) { A.doc = A.newDoc(); }
     const defs = {}; for (const sp of specParts) { let id = sp.part, d = A.def(id) || await A.ensureDef(id);
@@ -158,7 +158,7 @@ ${q}`;
       if (kind === 'ask') { out.innerHTML = '<div style="white-space:pre-wrap;color:var(--fg)">' + esc(reply) + '</div>'; return; }
       const spec = parseJSON(reply); if (!spec) { out.textContent = 'I could not read that reply as JSON. Ask Claude to “reply with the JSON object only”.'; return; }
       try { if (kind === 'part') { const d = spec.sides ? window.buildBox('My:' + spec.name.replace(/\s+/g, '_'), spec.name, 'My parts', spec.ref || 'U', spec.value || spec.name, spec.sides) : null;
-          if (!d) { out.textContent = 'The reply did not contain pins for a part.'; return; } d.desc = spec.desc || ''; if (spec.sim && spec.sim.as) d.sim = spec.sim; A.addCustom(d); A.L.cat = 'My parts'; A.refreshLib(); host.innerHTML = ''; A.toast('Added “' + d.name + '” to My parts. Click it to place it.'); return; }
+          if (!d) { out.textContent = 'The reply did not contain pins for a part.'; return; } d.desc = spec.desc || ''; if (spec.footprint) d.footprint = String(spec.footprint); if (spec.sim && spec.sim.as) d.sim = spec.sim; A.addCustom(d); A.L.cat = 'My parts'; A.refreshLib(); host.innerHTML = ''; A.toast('Added “' + d.name + '” to My parts. Click it to place it.'); return; }
         const res = await A.buildFromSpec(spec, { replace: true }); host.innerHTML = ''; A.fit(); A.runCheck(); const m = $('#msgs'); m.insertAdjacentHTML('afterbegin', (res.notes ? `<div class="msg ok">${esc(res.notes)}</div>` : '') + res.warnings.map(w => `<div class="msg bad">${esc(w)}</div>`).join('')); A.toast('Circuit built. Tweak it like any other sheet.'); }
       catch (e) { out.textContent = 'Could not build that: ' + e.message; } };
     if (mode === 'paste') { $('#aiCopy').onclick = async () => { const p = promptNow(); if (!p) return; try { await navigator.clipboard.writeText(p); $('#aiOut').textContent = 'Request copied (' + Math.round(p.length / 1000) + ' KB). Paste it into Claude.'; } catch (e) { const ta = $('#aiReply'); ta.value = p; ta.select(); $('#aiOut').textContent = 'Copy was blocked, so the request is in the box below. Copy it from there.'; } };
@@ -170,6 +170,11 @@ ${q}`;
   A.aiAsk = async (prompt, kind) => { let r = await aiAsk0(prompt, kind);
     if (kind && kind !== 'ask' && !parseJSON(r)) r = await aiAsk0(prompt + '\n\nYour previous reply could not be parsed. Reply again with ONLY the JSON object: start with { and end with }, no explanation, no markdown fences, no comments.', kind);
     return r; };
+  A.FOOTPRINTS = ['Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal', 'Resistor_SMD:R_0805_2012Metric', 'Resistor_SMD:R_0603_1608Metric', 'Capacitor_THT:C_Disc_D5.0mm_W2.5mm_P5.00mm', 'Capacitor_THT:CP_Radial_D5.0mm_P2.00mm', 'Capacitor_SMD:C_0805_2012Metric', 'Capacitor_SMD:C_0603_1608Metric', 'LED_THT:LED_D5.0mm', 'LED_SMD:LED_0805_2012Metric', 'Diode_THT:D_DO-41_SOD81_P10.16mm_Horizontal', 'Diode_SMD:D_SOD-123', 'Package_TO_SOT_THT:TO-92_Inline', 'Package_TO_SOT_SMD:SOT-23', 'Package_DIP:DIP-8_W7.62mm', 'Package_DIP:DIP-14_W7.62mm', 'Package_DIP:DIP-16_W7.62mm', 'Package_SO:SOIC-8_3.9x4.9mm_P1.27mm', 'Package_SO:SOIC-14_3.9x8.7mm_P1.27mm', 'Package_TO_SOT_THT:TO-220-3_Vertical', 'Connector_PinHeader_2.54mm:PinHeader_1x02_P2.54mm_Vertical', 'Connector_PinHeader_2.54mm:PinHeader_1x04_P2.54mm_Vertical', 'Button_Switch_THT:SW_PUSH_6mm', 'Buzzer_Beeper:Buzzer_12x9.5RM7.6', 'Potentiometer_THT:Potentiometer_Bourns_3386P_Vertical'];
+  /* footprint help: the AI picks a real KiCad footprint, or lists the options and explains how to choose */
+  A.aiFootprint = async (inst, note) => { const d = A.def(inst.def) || {}, pins = (d.pins || []).length;
+    const p = `You are a PCB footprint assistant for students. Part: "${d.name || inst.def}", value "${inst.value || ''}", ${pins} pins${note ? ', the user says: ' + note : ''}. Reply with ONE JSON object only, no markdown: {"footprint":"real KiCad library id e.g. Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal","why":"one or two plain sentences a beginner understands (through-hole vs surface-mount, what the package is)","alternatives":[{"footprint":"id","note":"when to pick this instead, e.g. if soldering by hand vs JLCPCB assembly"}]}. Prefer through-hole for hand soldering unless the part only comes in SMD. If unsure, say so in "why".`;
+    const spec = parseJSON(await A.aiAsk(p, 'fp')); if (!spec || !spec.footprint) throw new Error('The AI reply had no footprint'); return spec; };
   $('#bAI').onclick = () => A.aiDialog();
 
   /* ---------- lesson circuits ---------- */
