@@ -145,3 +145,6 @@ Right-click a straight wire: **Break wire here** leaves a gap; **Insert part in 
 
 ### Title block
 The title block is only as tall as it needs to be: comment, name, company and project rows appear only when filled in.
+
+### Auto-route
+Press **Shift+W**, click a pin, then click the pin (or spot) where the wire should end: it is routed with as few bends as possible and stays out of parts. Right-click a wire and choose **Auto-route this wire** to tidy an existing one. Press **W** to go back to normal wires. Build view has Auto-route in the Info panel for jumper wires.

@@ -17,6 +17,16 @@
     const away = ev => { if (!m.contains(ev.target)) { m.remove(); removeEventListener('pointerdown', away, true); removeEventListener('keydown', away, true); } };
     setTimeout(() => { addEventListener('pointerdown', away, true); addEventListener('keydown', away, true); }, 0); }
   A.ctxMenu = menu;
+  /* auto-router: orthogonal path with few bends that stays out of parts (Dijkstra on a 1-unit grid, turns cost extra) */
+  A.routeOrtho = (x0, y0, x1, y1) => { const pad = 10, minx = Math.min(x0, x1) - pad, maxx = Math.max(x0, x1) + pad, miny = Math.min(y0, y1) - pad, maxy = Math.max(y0, y1) + pad, W = maxx - minx + 1, H = maxy - miny + 1;
+    const bl = new Uint8Array(W * H); A.doc.parts.forEach(p => { const b = A.worldBBox(p); for (let x = Math.ceil(b.x0 + .01); x <= Math.floor(b.x1 - .01); x++) for (let y = Math.ceil(b.y0 + .01); y <= Math.floor(b.y1 - .01); y++) { const i = (x - minx) * H + (y - miny); if (x >= minx && x <= maxx && y >= miny && y <= maxy) bl[i] = 1; } });
+    const id = (x, y) => (x - minx) * H + (y - miny); bl[id(x0, y0)] = 0; bl[id(x1, y1)] = 0;
+    const D = [[1, 0], [0, 1], [-1, 0], [0, -1]], dist = new Float64Array(W * H * 5).fill(1e9), prev = new Int32Array(W * H * 5).fill(-1), heap = [[0, id(x0, y0) * 5 + 4]]; dist[id(x0, y0) * 5 + 4] = 0;
+    const push = e => { heap.push(e); let i = heap.length - 1; while (i > 0) { const p = (i - 1) >> 1; if (heap[p][0] <= heap[i][0]) break; [heap[p], heap[i]] = [heap[i], heap[p]]; i = p; } }, pop = () => { const t = heap[0], l = heap.pop(); if (heap.length) { heap[0] = l; let i = 0; for (;;) { let m = i; const a = 2 * i + 1, b = a + 1; if (a < heap.length && heap[a][0] < heap[m][0]) m = a; if (b < heap.length && heap[b][0] < heap[m][0]) m = b; if (m === i) break; [heap[m], heap[i]] = [heap[i], heap[m]]; i = m; } } return t; };
+    let goal = -1; while (heap.length) { const [d, s] = pop(); if (d > dist[s]) continue; const c = (s / 5) | 0, dir = s % 5, x = minx + ((c / H) | 0), y = miny + (c % H); if (x === x1 && y === y1) { goal = s; break; }
+      for (let k = 0; k < 4; k++) { const nx = x + D[k][0], ny = y + D[k][1]; if (nx < minx || nx > maxx || ny < miny || ny > maxy || bl[id(nx, ny)]) continue; const ns = id(nx, ny) * 5 + k, nd = d + 1 + (dir !== 4 && dir !== k ? 4 : 0); if (nd < dist[ns]) { dist[ns] = nd; prev[ns] = s; push([nd, ns]); } } }
+    if (goal < 0) return null; const pts = []; for (let s = goal; s >= 0; s = prev[s]) { const c = (s / 5) | 0; pts.push([minx + ((c / H) | 0), miny + (c % H)]); } pts.reverse();
+    const out = [pts[0]]; for (let i = 1; i < pts.length - 1; i++) { const a = pts[i - 1], b = pts[i], c = pts[i + 1]; if ((b[0] - a[0]) * (c[1] - b[1]) - (b[1] - a[1]) * (c[0] - b[0]) !== 0) out.push(b); } out.push(pts[pts.length - 1]); return out; };
   /* split an axis-aligned wire at pt, leaving a 2-unit gap (or none if too short) */
   A.breakWire = (wid, pt) => { const i = A.doc.wires.findIndex(w => w.id === wid); if (i < 0) return; const [x0, y0, x1, y1] = A.doc.wires[i].p, hz = y0 === y1, a = hz ? x0 : y0, b = hz ? x1 : y1, lo = Math.min(a, b), hi = Math.max(a, b), c = hz ? pt.x : pt.y, g = hi - lo >= 6 ? 1 : 0;
     const mk = (u, v) => ({ id: A.id('w'), p: hz ? [u, y0, v, y0] : [x0, u, x0, v] }), out = []; const m1 = Math.max(lo, Math.min(hi, c)) - g, m2 = Math.max(lo, Math.min(hi, c)) + g;
@@ -39,6 +49,8 @@
     const wr = view !== 'build' && id && (A.doc.wires || []).find(w => w.id === id);
     if (wr && (wr.p[0] === wr.p[2] || wr.p[1] === wr.p[3])) { const pt = { x: Math.round(S.mouse.x), y: Math.round(S.mouse.y) };
       arr.push({ t: 'Break wire here', f: () => A.breakWire(wr.id, pt) }, { t: 'Insert part in this wire…', f: () => { A._insertWire = { id: wr.id, pt }; A.libOpen(true); A.toast('Pick a part: it will be dropped into the wire', 2600); } }, '-'); }
+    const w2 = view !== 'build' && id && (A.doc.wires || []).find(w => w.id === id);
+    if (w2) arr.push({ t: 'Auto-route this wire', f: () => { const r = A.routeOrtho(w2.p[0], w2.p[1], w2.p[2], w2.p[3]); if (!r) { A.toast('No clear route', 1800); return; } const i = A.doc.wires.indexOf(w2), nw = []; for (let q = 0; q + 1 < r.length; q++) nw.push({ id: A.id('w'), p: [r[q][0], r[q][1], r[q + 1][0], r[q + 1][1]] }); A.doc.wires.splice(i, 1, ...nw); S.sel = new Set(); A.commit(); A.render(); } });
     if (view !== 'build') arr.push({ t: 'Mirror', k: 'X', off: !has, f: () => click('#bMir') });
     arr.push({ t: 'Duplicate', k: A.isMac ? '⌘D' : 'Ctrl+D', off: !has || view === 'build', f: () => keyDown('d', { ctrlKey: !A.isMac, metaKey: A.isMac }) }, { t: 'Delete', k: 'Del', off: !has, f: () => click('#bDel') }, '-',
       { t: 'Bring to front', off: !has, f: () => A.zOrder(sel, 'front') }, { t: 'Bring forward', off: !has, f: () => A.zOrder(sel, 'forward') }, { t: 'Send backward', off: !has, f: () => A.zOrder(sel, 'backward') }, { t: 'Send to back', off: !has, f: () => A.zOrder(sel, 'back') }, '-',

@@ -122,6 +122,7 @@
     const [gx, gy] = toGrid(e.clientX, e.clientY); const wm = S.tool === 'wire'; const [sx, sy, kind] = snapPt(gx, gy, wm || S.tool === 'label'); S.mouse = { x: sx, y: sy };
     if (S.tool === 'place' && S.placing) { const i = A.placePart(S.placing, sx, sy, S.rot, S.mir); A.commit(); S.sel = new Set([i.id]); renderProps(); A.render(); return; }
     if (S.tool === 'wire') { if (!S.draft) { S.draft = { pts: [[sx, sy]] }; A.render(); return; }
+      if (S.auto) { const l = S.draft.pts[S.draft.pts.length - 1], r = A.routeOrtho(l[0], l[1], sx, sy); if (!r) { A.toast('No clear route there. Draw it by hand.', 2200); return; } for (let i = 0; i + 1 < r.length; i++) A.doc.wires.push({ id: A.id('w'), p: [r[i][0], r[i][1], r[i + 1][0], r[i + 1][1]] }); S.draft.pts.push([sx, sy]); if (kind) S.draft = null; A.commit(); return; }
       const segs = draftSegs(); if (segs.length) { segs.forEach(s => A.doc.wires.push({ id: A.id('w'), p: s })); S.draft.pts.push([sx, sy]); S.draft.hfirst = undefined; S.draft.n = (S.draft.n || 0) + 1;
         if (kind) { S.draft = null; } A.commit(); } return; }
     if (S.tool === 'label') { const lbl = A.nets().find(n => n.points.includes(A.key(sx, sy))); askText('Net label name', lbl && !lbl.auto ? lbl.name : '', v => { A.doc.labels.push({ id: A.id('l'), x: sx, y: sy, text: v }); A.commit(); }); return; }
@@ -192,7 +193,8 @@
     else if (k === 'q' && e.shiftKey) { A.autoNC(); A.runCheck(); } else if (k === 'q') setTool('nc');
     else if (k === 'a') { e.preventDefault(); setTool('select'); libOpen(!document.body.classList.contains('libopen')); } else if (k === 'i') propsOpen(!document.body.classList.contains('propsopen'));
     else if (k === 'p') { e.preventDefault(); const c = $$('#cats [data-cat]').find(b => b.dataset.cat === 'Power'); libOpen(true); if (c) c.click(); const q = $('#q'); if (q) { q.value = ''; q.focus(); } }
-    else if (k === 'w') setTool('wire'); else if (k === 'l') setTool('label'); else if (k === 't') setTool('text'); else if (k === 'j') { setTool('wire'); A.toast('Junction dots appear automatically where wires meet or end on a wire', 2600); } else if (k === 's') setTool('select');
+    else if (k === 'w' && e.shiftKey) { S.auto = true; setTool('wire'); A.toast('Auto-route: click a pin, then click where it should end. Shift+W again or W for normal wires.', 3200); }
+    else if (k === 'w') { S.auto = false; setTool('wire'); } else if (k === 'l') setTool('label'); else if (k === 't') setTool('text'); else if (k === 'j') { setTool('wire'); A.toast('Junction dots appear automatically where wires meet or end on a wire', 2600); } else if (k === 's') setTool('select');
     else if (e.shiftKey && (k === 'g' || k === 'v' || k === 'r')) { e.preventDefault(); A.startPlacing(k === 'g' ? 'GND' : k === 'v' ? 'VCC' : 'R'); }
     else if (k === 'r') rotateSel(1); else if (k === 'x') { rotateSel(2); mirrorSel(); } else if (k === 'y') mirrorSel();
     else if (k === 'm' || k === 'g') startGrab();
