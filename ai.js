@@ -74,6 +74,7 @@ ${q}`;
   /* ---------- build a circuit from a spec ---------- */
   const pinIndex = (inst, ref) => { const pins = A.pinsOf(inst), s = String(ref); return pins.find(p => p.n === s) || pins.find(p => (p.name || '').toLowerCase() === s.toLowerCase()) || null; };
   const hits = (x0, y0, x1, y1, b) => y0 === y1 ? (y0 > b.y0 && y0 < b.y1 && Math.max(Math.min(x0, x1), b.x0) < Math.min(Math.max(x0, x1), b.x1)) : (x0 > b.x0 && x0 < b.x1 && Math.max(Math.min(y0, y1), b.y0) < Math.min(Math.max(y0, y1), b.y1));
+  A.problemList = () => { const r = A.erc().filter(m => m.kind === 'bad').map(m => m.text); try { const S = A.Sim; if (S && !S.running && A.doc.parts.length) { S.build(); S.errors.forEach(t => r.push(t)); } } catch (e) { /* ignore */ } return [...new Set(r)]; };
   A.buildFromSpec = async (spec, opts) => {
     opts = opts || {}; const warn = [];
     (spec.newParts || []).forEach(np => { try { if (!np.id) np.id = 'AI:' + np.name; if (A.LIB[np.id] && A.LIB[np.id].builtin) return;
@@ -97,6 +98,7 @@ ${q}`;
     // nets
     const nets = []; let auto = 1; (spec.nets || []).forEach(n => { const pins = []; (n.pins || []).forEach(r => { const [rf, ...rest] = String(r).trim().split('.'); const inst = insts[rf]; if (!inst) { warn.push('Net references unknown part ' + rf); return; }
         const p = pinIndex(inst, rest.join('.')); if (!p) { warn.push(`Part ${rf} has no pin “${rest.join('.')}”.`); return; } pins.push(p); }); if (pins.length) nets.push({ name: n.name || ('N' + auto++), named: !!n.name, pins }); });
+    { const owner = new Map(); nets.slice().sort((a, b) => (POWER.test(b.name) && b.named) - (POWER.test(a.name) && a.named)).forEach(n => { n.pins = n.pins.filter(p => { const k = p.inst.ref + '.' + p.n; if (owner.has(k)) { warn.push(`Pin ${k} was listed in both ${owner.get(k)} and ${n.name}; kept it in ${owner.get(k)}.`); return false; } owner.set(k, n.name); return true; }); }); for (let i = nets.length - 1; i >= 0; i--) if (!nets[i].pins.length) nets.splice(i, 1); }
     const bbs = A.doc.parts.map(p => A.worldBBox(p));
     const route = (labelsFor) => {
       A.doc.wires = []; A.doc.labels = []; A.doc.parts = A.doc.parts.filter(p => !(A.def(p.def) || {}).power);
@@ -159,7 +161,9 @@ ${q}`;
       const spec = parseJSON(reply); if (!spec) { out.textContent = 'I could not read that reply as JSON. Ask Claude to “reply with the JSON object only”.'; return; }
       try { if (kind === 'part') { const d = spec.sides ? window.buildBox('My:' + spec.name.replace(/\s+/g, '_'), spec.name, 'My parts', spec.ref || 'U', spec.value || spec.name, spec.sides) : null;
           if (!d) { out.textContent = 'The reply did not contain pins for a part.'; return; } d.desc = spec.desc || ''; if (spec.footprint) d.footprint = String(spec.footprint); if (spec.sim && spec.sim.as) d.sim = spec.sim; A.addCustom(d); A.L.cat = 'My parts'; A.refreshLib(); host.innerHTML = ''; A.toast('Added “' + d.name + '” to My parts. Click it to place it.'); return; }
-        const res = await A.buildFromSpec(spec, { replace: true }); host.innerHTML = ''; A.fit(); A.runCheck(); const m = $('#msgs'); m.insertAdjacentHTML('afterbegin', (res.notes ? `<div class="msg ok">${esc(res.notes)}</div>` : '') + res.warnings.map(w => `<div class="msg bad">${esc(w)}</div>`).join('')); A.toast('Circuit built. Tweak it like any other sheet.'); }
+        const res = await A.buildFromSpec(spec, { replace: true }); let fixed = 0;
+        for (let rd = 0; rd < 2 && mode !== 'paste' && A.aiAsk; rd++) { const pr = A.problemList().filter(t => !/^Add a ground/.test(t)); if (!pr.length) break; out.innerHTML = '<span class="spin"></span>Checking the circuit… fixing ' + pr.length + ' problem(s) (round ' + (rd + 1) + ')'; try { const rep = parseJSON(await A.aiAsk(A.circuitPrompt('Fix these problems in the circuit and keep everything else. Reply with the JSON object only.\n' + pr.join('\n'), A.docToSpec()), 'circuit')); if (!rep) break; await A.buildFromSpec(rep, { replace: true }); fixed += pr.length; } catch (e) { break; } }
+        host.innerHTML = ''; A.fit(); A.runCheck(); const m = $('#msgs'); m.insertAdjacentHTML('afterbegin', (res.notes ? `<div class="msg ok">${esc(res.notes)}</div>` : '') + res.warnings.map(w => `<div class="msg bad">${esc(w)}</div>`).join('')); A.toast(fixed ? 'Circuit built. Checked and fixed ' + fixed + ' problem(s).' : 'Circuit built. Tweak it like any other sheet.'); }
       catch (e) { out.textContent = 'Could not build that: ' + e.message; } };
     if (mode === 'paste') { $('#aiCopy').onclick = async () => { const p = promptNow(); if (!p) return; try { await navigator.clipboard.writeText(p); $('#aiOut').textContent = 'Request copied (' + Math.round(p.length / 1000) + ' KB). Paste it into Claude.'; } catch (e) { const ta = $('#aiReply'); ta.value = p; ta.select(); $('#aiOut').textContent = 'Copy was blocked, so the request is in the box below. Copy it from there.'; } };
       $('#aiBuild').onclick = () => { const r = $('#aiReply').value.trim(); if (!r) { $('#aiOut').textContent = 'Paste Claude’s reply first.'; return; } finish(r); }; }
