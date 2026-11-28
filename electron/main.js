@@ -20,6 +20,7 @@ app.on('browser-window-created', (e, w) => w.webContents.on('did-finish-load', (
 // OPENROUTER_API_KEY in the environment still works and takes priority.
 const keyFile = () => path.join(app.getPath('userData'), 'ai-key.bin');
 function getKey() { if (process.env.OPENROUTER_API_KEY) return process.env.OPENROUTER_API_KEY; try { return safeStorage.decryptString(fs.readFileSync(keyFile())); } catch (e) { return ''; } }
+ipcMain.handle('ai-key-tail', () => { const k = getKey(); return k ? k.slice(-4) : ''; });
 ipcMain.handle('ai-has-key', () => !!getKey());
 ipcMain.handle('ai-set-key', (_e, k) => { k = String(k || '').trim(); if (!/^sk-or-[\w-]{10,}$/.test(k)) throw new Error('That does not look like an OpenRouter key. It starts with sk-or-'); if (!safeStorage.isEncryptionAvailable()) throw new Error('This computer cannot store the key securely.'); fs.writeFileSync(keyFile(), safeStorage.encryptString(k)); return true; });
 ipcMain.handle('ai-clear-key', () => { try { fs.unlinkSync(keyFile()); } catch (e) { /* nothing saved */ } return true; });

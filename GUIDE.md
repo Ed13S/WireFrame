@@ -136,3 +136,6 @@ Negative supply rails (e.g. -12 V) in Build view, and wire-current animation in 
 
 ### Check results
 In **Check**, press **Copy all** to copy every error and warning as plain text, ready to paste into an AI chat.
+
+### Where the Mac app keeps your AI key
+The key is encrypted with a secret called **WireFrame Safe Storage** in your **login keychain** (open the *Keychain Access* app, not Passwords, and search "WireFrame"). The encrypted key file is `~/Library/Application Support/WireFrame/ai-key.bin`. To change or remove it, use **Change or remove** in the AI box, or delete the Keychain item (the app then asks for a new key).
