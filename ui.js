@@ -96,7 +96,7 @@
   $$('.tool').forEach(b => b.onclick = () => setTool(b.dataset.tool));
   $('#bRot').onclick = () => rotateSel(1); $('#bMir').onclick = mirrorSel; $('#bDel').onclick = deleteSel; $('#bUndo').onclick = A.undo; $('#bRedo').onclick = A.redo; $('#bFit').onclick = A.fit;
   function updateButtons() { $('#bUndo').disabled = A.hist.length < 2; $('#bRedo').disabled = !A.fut.length; }
-  A.startPlacing = async (id) => { const df = await A.ensureDef(id); if (!df) return A.toast('Could not load that part'); S.placing = id; S.rot = 0; S.mir = 0; setTool('place'); $$('.pi').forEach(e => e.classList.toggle('on', e.dataset.id === id)); };
+  A.startPlacing = async (id) => { if (A._insertWire) { libOpen(false); if (await A.insertPartInWire(id)) return; } const df = await A.ensureDef(id); if (!df) return A.toast('Could not load that part'); S.placing = id; S.rot = 0; S.mir = 0; setTool('place'); $$('.pi').forEach(e => e.classList.toggle('on', e.dataset.id === id)); };
 
   function askText(title, init, cb, multi) {
     const host = $('#modalHost'); host.innerHTML = `<div class="back"><div class="modal" style="width:min(420px,100%)"><header><b>${esc(title)}</b></header><div class="mb">${multi ? `<textarea id="askIn" rows="8" style="width:100%">${esc(init || '')}</textarea>` : `<input id="askIn" value="${esc(init || '')}" autocomplete="off">`}</div><footer><button id="askNo">Cancel</button><button id="askOk" class="accent">OK</button></footer></div></div>`;

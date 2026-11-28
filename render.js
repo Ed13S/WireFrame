@@ -55,16 +55,18 @@
     return g;
   };
   A.VERSION = 'WireFrame EDA ' + A.VER;
-  A.sheetSVG = () => { const { w, h } = A.SHEET, m = A.doc.meta, bw = 110, rh = 4.4, n = 11, bh = rh * n, tx = w - 3 - bw, ty = h - 3 - bh, L = tx + 2;
-    /* KiCad's layout: comments 1-4, name, company, project, then sheet/file, title, size/date/rev, app/id */
+  A.sheetSVG = () => { const { w, h } = A.SHEET, m = A.doc.meta, bw = 110, rh = 4.4;
+    /* KiCad's layout, but the top rows (comments, name, company, project) only exist when filled in, so an empty block stays short */
+    const top = [[m.comment, 1.6, 'cm'], [m.comment2, 1.6, 'sm'], [m.comment3, 1.6, 'sm'], [m.comment4, 1.6, 'sm'], [m.author, 1.7, 'sm'], [m.company, 1.9, 'b'], [m.project ? 'Project: ' + m.project : '', 1.5, 'sm']].filter(r => r[0]);
+    const k = top.length, n = k + 4, bh = rh * n, tx = w - 3 - bw, ty = h - 3 - bh, L = tx + 2;
     const T = (row, t, sz, cls, dx) => `<text class="tb ${cls || ''}" x="${L + (dx || 0)}" y="${ty + rh * row + rh / 2}" font-size="${sz}" dominant-baseline="central">${esc(t)}</text>`;
-    const rows = [7, 8, 9, 10], lines = rows.map(r => `M${tx} ${ty + rh * r}H${w - 3}`);
+    const lines = [0, 1, 2, 3].filter(q => k + q > 0).map(q => `M${tx} ${ty + rh * (k + q)}H${w - 3}`);
     return `<g class="sheet"><rect class="paper" x="0" y="0" width="${w}" height="${h}"/><rect class="gridfill" x="0" y="0" width="${w}" height="${h}" fill="url(#gridp)" pointer-events="none"/><rect class="frame" x="3" y="3" width="${w - 6}" height="${h - 6}"/><rect class="frame" x="${tx}" y="${ty}" width="${bw}" height="${bh}"/>` +
-      `<path class="frame" d="${lines.join('')}M${tx + 28} ${ty + rh * 9}V${ty + rh * 10}M${tx + 88} ${ty + rh * 9}V${h - 3}"/>` +
-      T(0, m.comment || '', 1.6, 'cm') + T(1, m.comment2 || '', 1.6, 'sm') + T(2, m.comment3 || '', 1.6, 'sm') + T(3, m.comment4 || '', 1.6, 'sm') + T(4, m.author || '', 1.7, 'sm') + T(5, m.company || '', 1.9, 'b') + T(6, m.project ? 'Project: ' + m.project : '', 1.5, 'sm') +
-      T(7, 'Sheet: /   File: ' + (m.file || 'untitled.wireframe'), 1.4, 'sm') +
-      T(8, 'Title: ' + (m.title || ''), 2.3, 'b i') + T(9, 'Size: ' + (m.size || 'A4'), 1.5, 'sm') + T(9, 'Date: ' + (m.date || ''), 1.5, 'sm', 28) + T(9, 'Rev: ' + (m.rev || '1'), 1.6, 'b', 88) +
-      T(10, '©' + A.VERSION, 1.5, 'sm') + T(10, 'Id: 1/1', 1.4, 'sm', 88) +
+      `<path class="frame" d="${lines.join('')}M${tx + 28} ${ty + rh * (k + 2)}V${ty + rh * (k + 3)}M${tx + 88} ${ty + rh * (k + 2)}V${h - 3}"/>` +
+      top.map((r, q) => T(q, r[0], r[1], r[2])).join('') +
+      T(k, 'Sheet: /   File: ' + (m.file || 'untitled.wireframe'), 1.4, 'sm') +
+      T(k + 1, 'Title: ' + (m.title || ''), 2.3, 'b i') + T(k + 2, 'Size: ' + (m.size || 'A4'), 1.5, 'sm') + T(k + 2, 'Date: ' + (m.date || ''), 1.5, 'sm', 28) + T(k + 2, 'Rev: ' + (m.rev || '1'), 1.6, 'b', 88) +
+      T(k + 3, '©' + A.VERSION, 1.5, 'sm') + T(k + 3, 'Id: 1/1', 1.4, 'sm', 88) +
       `<rect data-tb="1" class="tbhit" x="${tx}" y="${ty}" width="${bw}" height="${bh}" fill="transparent" pointer-events="all"><title>Double-click to edit the title block</title></rect></g>`; };
   A.junctions = () => { const d = A.doc, cnt = new Map(); const add = (x, y, n) => { const k = A.key(x, y); const e = cnt.get(k) || { x, y, n: 0 }; e.n += n; cnt.set(k, e); };
     d.wires.forEach(w => { add(w.p[0], w.p[1], 1); add(w.p[2], w.p[3], 1); });

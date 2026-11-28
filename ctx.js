@@ -17,6 +17,18 @@
     const away = ev => { if (!m.contains(ev.target)) { m.remove(); removeEventListener('pointerdown', away, true); removeEventListener('keydown', away, true); } };
     setTimeout(() => { addEventListener('pointerdown', away, true); addEventListener('keydown', away, true); }, 0); }
   A.ctxMenu = menu;
+  /* split an axis-aligned wire at pt, leaving a 2-unit gap (or none if too short) */
+  A.breakWire = (wid, pt) => { const i = A.doc.wires.findIndex(w => w.id === wid); if (i < 0) return; const [x0, y0, x1, y1] = A.doc.wires[i].p, hz = y0 === y1, a = hz ? x0 : y0, b = hz ? x1 : y1, lo = Math.min(a, b), hi = Math.max(a, b), c = hz ? pt.x : pt.y, g = hi - lo >= 6 ? 1 : 0;
+    const mk = (u, v) => ({ id: A.id('w'), p: hz ? [u, y0, v, y0] : [x0, u, x0, v] }), out = []; const m1 = Math.max(lo, Math.min(hi, c)) - g, m2 = Math.max(lo, Math.min(hi, c)) + g;
+    if (m1 > lo) out.push(mk(lo, m1)); if (m2 < hi) out.push(mk(m2, hi)); A.doc.wires.splice(i, 1, ...out); S.sel = new Set(); A.commit(); A.render(); };
+  /* drop a 2-pin part into a wire: part centred on pt, wire re-joined to its two pins */
+  A.insertPartInWire = async (defId) => { const q = A._insertWire; A._insertWire = null; if (!q) return false; const w = A.doc.wires.find(x => x.id === q.id); const df = await A.ensureDef(defId); if (!w || !df || df.pins.length < 2) { A.toast('Pick a part with two pins'); return true; }
+    const hz = w.p[1] === w.p[3], p0 = df.pins[0], p1 = df.pins[1], axisX = Math.abs(p1.x - p0.x) >= Math.abs(p1.y - p0.y);
+    const rot = hz === axisX ? 0 : 1, inst = A.placePart(defId, 0, 0, rot, 0); let ps = A.pinsOf(inst); const mx = (ps[0].x + ps[1].x) / 2, my = (ps[0].y + ps[1].y) / 2; inst.x = Math.round(q.pt.x - mx); inst.y = Math.round(q.pt.y - my); ps = A.pinsOf(inst);
+    const k = hz ? 'x' : 'y', ord = ps.slice(0, 2).sort((u, v) => u[k] - v[k]), lo = Math.min(w.p[0], w.p[2]), hi = Math.max(w.p[0], w.p[2]), j = A.doc.wires.indexOf(w), add = [];
+    const mk = (a, b, c, d) => { if (a !== c || b !== d) add.push({ id: A.id('w'), p: [a, b, c, d] }); };
+    if (hz) { mk(lo, w.p[1], ord[0].x, ord[0].y); mk(ord[1].x, ord[1].y, hi, w.p[1]); } else { mk(w.p[0], lo, ord[0].x, ord[0].y); mk(ord[1].x, ord[1].y, w.p[0], hi); }
+    A.doc.wires.splice(j, 1, ...add); S.sel = new Set([inst.id]); A.setTool && A.setTool('select'); A.commit(); A.render(); return true; };
   A.ctxShow = (e, view) => {
     let id = null; const t = document.elementFromPoint(e.clientX, e.clientY);
     if (view === 'build') { const g = t && t.closest && t.closest('[data-id],[data-j],[data-s]'); id = g ? (g.dataset.id && g.dataset.id !== 'ghost' ? g.dataset.id : g.dataset.j ? 'j:' + g.dataset.j : g.dataset.s ? 's:' + g.dataset.s : null) : null;
@@ -24,6 +36,9 @@
     else { const g = t && t.closest && t.closest('#svg [data-id]'); id = g ? g.dataset.id : null; if (id && !S.sel.has(id)) { S.sel = new Set([id]); A.renderProps(); A.render(); } }
     const sel = view === 'build' ? [...A.bsel()] : [...S.sel], has = !!id || sel.length > 0;
     const arr = [{ t: 'Rotate', k: 'R', off: !has, f: () => click('#bRot') }];
+    const wr = view !== 'build' && id && (A.doc.wires || []).find(w => w.id === id);
+    if (wr && (wr.p[0] === wr.p[2] || wr.p[1] === wr.p[3])) { const pt = { x: Math.round(S.mouse.x), y: Math.round(S.mouse.y) };
+      arr.push({ t: 'Break wire here', f: () => A.breakWire(wr.id, pt) }, { t: 'Insert part in this wire…', f: () => { A._insertWire = { id: wr.id, pt }; A.libOpen(true); A.toast('Pick a part: it will be dropped into the wire', 2600); } }, '-'); }
     if (view !== 'build') arr.push({ t: 'Mirror', k: 'X', off: !has, f: () => click('#bMir') });
     arr.push({ t: 'Duplicate', k: A.isMac ? '⌘D' : 'Ctrl+D', off: !has || view === 'build', f: () => keyDown('d', { ctrlKey: !A.isMac, metaKey: A.isMac }) }, { t: 'Delete', k: 'Del', off: !has, f: () => click('#bDel') }, '-',
       { t: 'Bring to front', off: !has, f: () => A.zOrder(sel, 'front') }, { t: 'Bring forward', off: !has, f: () => A.zOrder(sel, 'forward') }, { t: 'Send backward', off: !has, f: () => A.zOrder(sel, 'backward') }, { t: 'Send to back', off: !has, f: () => A.zOrder(sel, 'back') }, '-',

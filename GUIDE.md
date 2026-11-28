@@ -139,3 +139,9 @@ In **Check**, press **Copy all** to copy every error and warning as plain text, 
 
 ### Where the Mac app keeps your AI key
 The key is encrypted with a secret called **WireFrame Safe Storage** in your **login keychain** (open the *Keychain Access* app, not Passwords, and search "WireFrame"). The encrypted key file is `~/Library/Application Support/WireFrame/ai-key.bin`. To change or remove it, use **Change or remove** in the AI box, or delete the Keychain item (the app then asks for a new key).
+
+### Break a wire / insert a part
+Right-click a straight wire: **Break wire here** leaves a gap; **Insert part in this wire…** lets you pick a two-pin part (for example an ammeter) that is dropped into the wire and joined to it. Undo works.
+
+### Title block
+The title block is only as tall as it needs to be: comment, name, company and project rows appear only when filled in.
