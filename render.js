@@ -54,7 +54,7 @@
     g += `<rect class="hit" x="${wb.x0 - .5}" y="${wb.y0 - .5}" width="${wb.x1 - wb.x0 + 1}" height="${wb.y1 - wb.y0 + 1}"/></g>`;
     return g;
   };
-  A.VERSION = 'WireFrame EDA 1.0.1';
+  A.VERSION = 'WireFrame EDA ' + A.VER;
   A.sheetSVG = () => { const { w, h } = A.SHEET, m = A.doc.meta, bw = 110, rh = 4.4, n = 11, bh = rh * n, tx = w - 3 - bw, ty = h - 3 - bh, L = tx + 2;
     /* KiCad's layout: comments 1-4, name, company, project, then sheet/file, title, size/date/rev, app/id */
     const T = (row, t, sz, cls, dx) => `<text class="tb ${cls || ''}" x="${L + (dx || 0)}" y="${ty + rh * row + rh / 2}" font-size="${sz}" dominant-baseline="central">${esc(t)}</text>`;

@@ -1,5 +1,6 @@
 /* Schematic Studio core: model, geometry, library registry, nets, undo. No DOM here. */
 const App = window.App = {
+  VER: '2.1.3', // the one place the version number lives
   doc: null, LIB: {}, kicadIndex: null, kicadLoaded: {}, custom: [], hist: [], fut: [], listeners: [],
   meta: { title: 'Untitled schematic', author: '', date: new Date().toISOString().slice(0, 10) }
 };

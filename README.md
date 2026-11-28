@@ -14,7 +14,7 @@ A free circuit editor for students. Draw a schematic the way KiCad does, then sw
 
 **In the browser (easiest):** open the WireFrame website. In Chrome or Edge you can install it as an app from the address bar, and it then works offline.
 
-**Mac app:** download **WireFrame.dmg** (File menu → *Download Mac app*, or from this repo), open it and drag WireFrame into Applications. The app is not signed by Apple, so the first time: open it, then go to System Settings → Privacy & Security → scroll down → **Open Anyway**. Step by step with pictures-in-words is in [GUIDE.md](GUIDE.md).
+**Mac app:** download **WireFrame.dmg** (File menu → *Download Mac app*, or from this repo), open it and drag WireFrame into Applications, then run `xattr -cr /Applications/WireFrame.app` in Terminal (removes the "Apple could not verify…" quarantine flag) and open it. If you prefer, open it and then go to System Settings → Privacy & Security → scroll down → **Open Anyway**. Step by step with pictures-in-words is in [GUIDE.md](GUIDE.md).
 
 ## Your files
 Save sheets as **`.wire`** files (File → Save). They carry everything: the schematic, the breadboard layout, the title block and any parts you made. Open them on any computer, or in the Mac app, with File → Open or by dragging the file onto the page.

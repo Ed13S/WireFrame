@@ -10,7 +10,7 @@
 
   /* ----- netlists / BOM ----- */
   A.kicadNetlist = () => { const nets = A.nets(), parts = insts().filter(p => !(A.def(p.def).power) && !(p.ref || '').startsWith('#'));
-    let o = '(export (version "E")\n  (design (source ' + qs(base() + '.wireframe') + ') (tool "WireFrame EDA 1.0.1"))\n  (components\n';
+    let o = '(export (version "E")\n  (design (source ' + qs(base() + '.wireframe') + ') (tool "WireFrame EDA ' + A.VER + '"))\n  (components\n';
     parts.forEach(p => { const d = A.def(p.def); o += `    (comp (ref ${qs(p.ref)}) (value ${qs(p.value || d.name)}) (footprint ${qs(p.footprint || d.footprint || '')}) (libsource (lib "WireFrame") (part ${qs(safe(p.def))}) (description ${qs(d.name)})))\n`; });
     o += '  )\n  (nets\n'; let code = 1;
     nets.forEach(n => { const pins = n.pins.filter(x => parts.includes(x.inst)); if (!pins.length) return; o += `    (net (code ${code++}) (name ${qs(n.name)})\n` + pins.map(x => `      (node (ref ${qs(x.inst.ref)}) (pin ${qs(x.n)}))`).join('\n') + ')\n'; });
@@ -18,7 +18,7 @@
   A.bomCSV = () => { const g = {}; insts().filter(p => !A.def(p.def).power && !(p.ref || '').startsWith('#')).forEach(p => { const d = A.def(p.def), k = (p.value || d.name) + '|' + d.name; (g[k] = g[k] || { value: p.value || d.name, part: d.name, fp: p.footprint || d.footprint || '', refs: [] }).refs.push(p.ref); });
     return 'Reference,Qty,Value,Part,Footprint\n' + Object.values(g).map(r => `"${r.refs.join(' ')}",${r.refs.length},"${r.value}","${r.part}","${r.fp || ''}"`).join('\n') + '\n'; };
   A.spiceNetlist = () => { const nets = A.nets(), name = new Map(); const nm = n => /^(GND|AGND|DGND|PGND|VSS|0V|0)$/i.test(n.name) ? '0' : n.name.replace(/[^\w+\-]/g, '_');
-    nets.forEach(n => n.pins.forEach(p => name.set(p.inst.id + '.' + p.n, nm(n)))); let o = '* ' + (A.doc.meta.title || 'WireFrame circuit') + '\n* exported by WireFrame EDA 1.0.1 (starting point: check models before simulating)\n'; const models = new Set(); let k = 0;
+    nets.forEach(n => n.pins.forEach(p => name.set(p.inst.id + '.' + p.n, nm(n)))); let o = '* ' + (A.doc.meta.title || 'WireFrame circuit') + '\n* exported by WireFrame EDA ' + A.VER + ' (starting point: check models before simulating)\n'; const models = new Set(); let k = 0;
     insts().forEach(p => { const d = A.def(p.def); if (d.power || (p.ref || '').startsWith('#')) return; const m = A.simModel && A.simModel(p); const node = i => name.get(p.id + '.' + d.pins[i].n) || ('NC' + (++k)); const r = (p.ref || 'X' + (++k)).replace(/\W/g, ''); const val = p.value || '';
       const num = v => (A.parseValue ? A.parseValue(v) : parseFloat(v)); const t = m && m.t;
       if (t === 'R') o += `${/^R/i.test(r) ? r : 'R' + r} ${node(0)} ${node(1)} ${num(val) || 1000}\n`;
@@ -42,7 +42,7 @@
   function pinLine(d, s) { return d.pins.some(p => (s.p[0] === p.x && s.p[1] === p.y) || (s.p[2] === p.x && s.p[3] === p.y)); }
   function pinLen(d, p) { for (const s of d.draw) if (s.t === 'l') { if (s.p[0] === p.x && s.p[1] === p.y) return Math.hypot(s.p[2] - s.p[0], s.p[3] - s.p[1]) || 2; if (s.p[2] === p.x && s.p[3] === p.y) return Math.hypot(s.p[2] - s.p[0], s.p[3] - s.p[1]) || 2; } return 2; }
   A.kicadSch = () => { const d = A.doc, m = d.meta, used = {}; insts().forEach(p => used[p.def] = 1);
-    let o = `(kicad_sch (version 20231120) (generator "wireframe") (generator_version "1.0.1")\n  (uuid ${qs(uuid())})\n  (paper "A4")\n  (title_block (title ${qs(m.title)}) (date ${qs(m.date)}) (rev ${qs(m.rev || '1')}) (company ${qs(m.company || '')}) (comment 1 ${qs(m.comment || '')})${[2, 3, 4].map(i => m['comment' + i] ? ` (comment ${i} ${qs(m['comment' + i])})` : '').join('')})\n  (lib_symbols\n`;
+    let o = `(kicad_sch (version 20231120) (generator "wireframe") (generator_version "${A.VER}")\n  (uuid ${qs(uuid())})\n  (paper "A4")\n  (title_block (title ${qs(m.title)}) (date ${qs(m.date)}) (rev ${qs(m.rev || '1')}) (company ${qs(m.company || '')}) (comment 1 ${qs(m.comment || '')})${[2, 3, 4].map(i => m['comment' + i] ? ` (comment ${i} ${qs(m['comment' + i])})` : '').join('')})\n  (lib_symbols\n`;
     Object.keys(used).forEach(id => { o += libSymbol(id, A.def(id)); }); o += '  )\n';
     const X = v => f(v * MM);
     A.junctions().forEach(j => { o += `  (junction (at ${X(j.x)} ${X(j.y)}) (diameter 0) (color 0 0 0 0) (uuid ${qs(uuid())}))\n`; });

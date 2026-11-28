@@ -1,13 +1,14 @@
 {
  "name": "wireframe",
  "productName": "WireFrame",
- "version": "1.0.1",
+ "version": "2.1.3",
  "main": "main.js",
  "license": "SEE LICENSE IN ../LICENSE",
  "scripts": {
   "prep": "rm -rf app && mkdir app && cp -R ../index.html ../*.js ../*.css ../*.webmanifest ../icon* ../lib ../fonts app/ && rm -f app/sw.js",
   "start": "npm run prep && electron .",
-  "dist": "npm run prep && electron-builder --mac --publish never"
+  "dist": "npm run prep && electron-builder --mac --publish never",
+  "release": "npm run prep && electron-builder --mac --publish always"
  },
  "build": {
   "appId": "org.wireframe.app",
@@ -26,6 +27,8 @@
    ],
    "identity": null
   },
+  "publish": [{ "provider": "github", "owner": "Ed13S", "repo": "WireFrame" }],
+  "artifactName": "WireFrame.${ext}",
   "icon": "icon.png",
   "afterPack": "afterpack.js"
  },

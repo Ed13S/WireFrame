@@ -32,7 +32,7 @@ Open the live link in Chrome/Edge/Safari and use **Install app / Add to Dock / A
 3. Click the finished run, scroll to **Artifacts** at the bottom, and click **WireFrame-mac** to download a zip.
 4. Double-click the zip to unzip it, then open the `.dmg` inside.
 5. Drag **WireFrame** onto the **Applications** folder.
-6. The app is unsigned, so the first time **right-click WireFrame in Applications, choose Open, then Open**. If macOS still blocks it: **System Settings → Privacy & Security → scroll down → Open Anyway**. You only do this once.
+6. The app is unsigned, so macOS may block it. After dragging it into Applications, open Terminal and run `xattr -cr /Applications/WireFrame.app` (this removes the download quarantine flag that causes "Apple could not verify…"), then open WireFrame. Alternatively **right-click WireFrame in Applications, choose Open, then Open**. If macOS still blocks it: **System Settings → Privacy & Security → scroll down → Open Anyway**. You only do this once.
 
 **Option C: run it from source**
 1. Install Node.js from nodejs.org.
@@ -88,7 +88,7 @@ A Mac app opened from the Dock doesn't see keys set in Terminal, so start it fro
 
 **AI:** Make a circuit, Make a part, or Ask about this circuit.
 
-**Save and share:** File menu → Save `.json` (reopen with Open or drag onto the page). Export PNG/SVG, **Copy picture to clipboard**, Copy SVG, netlist. Fill in Title, Author, Date in Properties; exports carry a KiCad-style title block ending "©WireFrame EDA 1.0.1".
+**Save and share:** File menu → Save `.json` (reopen with Open or drag onto the page). Export PNG/SVG, **Copy picture to clipboard**, Copy SVG, netlist. Fill in Title, Author, Date in Properties; exports carry a KiCad-style title block ending "©WireFrame EDA 2.1.3".
 
 **Theme button (top right):** cycles dark (black and acid green), light (KiCad-style with light-blue symbols) and auto. The sheet is cream in dark mode.
 
