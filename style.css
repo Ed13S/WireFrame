@@ -205,3 +205,4 @@ body.propsopen #props{display:block}
 #bAutoNC{display:block;margin-top:6px}
 
 .bthumb text{font-family:Inter,system-ui,sans-serif;text-anchor:middle;dominant-baseline:central}
+.instr{display:inline-flex;gap:4px}.instr button{cursor:grab;touch-action:none}

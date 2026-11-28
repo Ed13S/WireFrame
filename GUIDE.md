@@ -151,3 +151,6 @@ Press **Shift+W**, click a pin, then click the pin (or spot) where the wire shou
 
 ### Transformer
 Select a transformer and set Primary/Secondary turns, voltage, current and inductance in Info. Editing one value updates the others (Vs = Vp·Ns/Np, Is = Ip·Np/Ns). The simulator now runs it as two coupled inductors, so it only passes AC.
+
+### Instruments
+The top bar has Voltmeter, Ammeter, Multimeter and Scope buttons (hidden while simulating): drag one onto the sheet or breadboard. The multimeter has a mode (DC/AC volts, DC/AC amps, ohms) in Info. Press Play and every placed scope opens its own window with Time/div and Volts/div, an Auto button, Vpp and frequency readouts. An **Inverter (DC to AC)** part in Source turns a DC supply into a 50 Hz (editable in its value) sine.

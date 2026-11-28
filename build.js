@@ -9,7 +9,7 @@
   B.railHole = (ri, nearX) => { let best = null; for (let x = 1; x <= B.N; x++) if (x % 6 !== 0 && (best === null || Math.abs(x - nearX) < Math.abs(best - nearX))) best = x; return [best, B.railY[ri]]; };
   /* ---------- classification and footprints ---------- */
   const BOARDS = new Set(['ARDUINO_UNO', 'ARDUINO_NANO', 'ESP32_DEVKIT', 'ESP32_C3', 'PICO', 'STM32_BLUEPILL']);
-  const FREE = new Set(['BAT', 'VDC', 'VAC', 'IDC', 'MOTOR', 'SERVO', 'SPEAKER', 'LAMP', 'TRANSFORMER', 'RELAY', 'JACK_DC', 'USB_C', 'VM', 'AM']);
+  const FREE = new Set(['BAT', 'VDC', 'VAC', 'IDC', 'MOTOR', 'SERVO', 'SPEAKER', 'LAMP', 'TRANSFORMER', 'RELAY', 'JACK_DC', 'USB_C', 'VM', 'AM', 'MM', 'SCOPE', 'INVERTER']);
   const num = s => /^\d+$/.test(String(s)) ? +s : NaN;
   B.kind = (d) => { const id = d.id, n = d.pins.length, c = d.cat || '';
     const fp = d.footprint || '', evenNum = n % 2 === 0 && d.pins.every(p => !isNaN(num(p.n))); // AI/custom parts: the footprint tells us the real package

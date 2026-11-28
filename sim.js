@@ -18,7 +18,7 @@
     BAT: { t: 'V', pins: ['1', '2'] }, VDC: { t: 'V', pins: ['1', '2'] }, VAC: { t: 'VAC', pins: ['1', '2'] },
     SW: { t: 'SW', pins: ['1', '2'] }, SW_PUSH: { t: 'SW', pins: ['1', '2'], momentary: true }, SW_SPDT: { t: 'SPDT', pins: ['1', '2', '3'] },
     RELAY: { t: 'RELAY', pins: ['1', '2', '3', '4', '5'] }, MOTOR: { t: 'MOTOR', pins: ['1', '2'] }, LAMP: { t: 'LAMP', pins: ['1', '2'] }, SPEAKER: { t: 'R', pins: ['1', '2'], r: 8 }, BUZZER: { t: 'BUZZ', pins: ['1', '2'] },
-    VM: { t: 'VM', pins: ['1', '2'] }, AM: { t: 'AM', pins: ['1', '2'] },
+    VM: { t: 'VM', pins: ['1', '2'] }, MM: { t: 'MM', pins: ['1', '2'] }, SCOPE: { t: 'SCOPE', pins: ['1', '2', '3'] }, INVERTER: { t: 'INV', pins: ['1', '2', '3', '4'] }, AM: { t: 'AM', pins: ['1', '2'] },
     Q_NPN: { t: 'BJT', s: 1, pins: ['2', '1', '3'] }, Q_PNP: { t: 'BJT', s: -1, pins: ['2', '1', '3'] }, Q_DARL_NPN: { t: 'BJT', s: 1, pins: ['2', '1', '3'], p: { is: 1e-24, bf: 1500 } }, Q_DARL_PNP: { t: 'BJT', s: -1, pins: ['2', '1', '3'], p: { is: 1e-24, bf: 1500 } },
     Q_NMOS: { t: 'MOS', s: 1, pins: ['2', '1', '3'] }, Q_PMOS: { t: 'MOS', s: -1, pins: ['2', '1', '3'] },
     OPAMP: { t: 'OA', pins: ['1', '2', '3', '4', '5'] }, COMP: { t: 'OA', pins: ['1', '2', '3', '4', '5'], comp: true },
@@ -89,6 +89,9 @@
         case 'LAMP': el.r = 25; el.rated = Math.max(1, num(inst.value, 6)); break;
         case 'BUZZ': el.r = 42; break;
         case 'FUSE': el.rate = Math.max(0.01, num(inst.value, 1)); el.heat = 0; el.blown = false; break;
+        case 'MM': { const md = (inst.mm || 'dcv'); el.mode = md; el.r = (md === 'dca' || md === 'aca') ? 1e-3 : md === 'ohm' ? 1e9 : 1e7; el.ia = 0; el.acs = 0; el.acn = 0; break; }
+        case 'SCOPE': el.buf = []; break;
+        case 'INV': { const mh = /([\d.]+)\s*(k)?\s*Hz/i.exec(String(inst.value || '')); el.f = mh ? +mh[1] * (mh[2] ? 1e3 : 1) : 50; el.iin = 0; break; }
         case 'VM': el.r = 1e7; break; case 'AM': el.r = 1e-3; break;
         case 'BJT': el.s = m.s; el.is = (m.p && m.p.is) || 1e-14; el.bf = (m.p && m.p.bf) || 150; el.br = 3; el.vl = [0, 0]; break;
         case 'MOS': el.s = m.s; { const big = /IRF|IRL|FQ|STP|BUZ/i.test(inst.value || ''); el.vth = big ? 3 : 2; el.kp = big ? 5 : 0.15; } el.vl = 0; break;
@@ -129,6 +132,9 @@
     for (let i = 1; i < Sim.nodes; i++) Mx[i - 1][i - 1] += GMIN;
     for (const e of E) { const [a, c, d3] = e.n;
       switch (e.t) {
+        case 'MM': G(a, c, 1 / e.r); if (e.mode === 'ohm') { I(a, 1e-3); I(c, -1e-3); } break;
+        case 'SCOPE': G(a, d3, 1e-7); G(c, d3, 1e-7); break;
+        case 'INV': { const [dp, dn, o1, o2] = e.n, pv = Sim.vprev, vin = Math.max(0, pv[dp] - pv[dn]); G(dp, dn, 1e-5); const vs = vin * 0.95 * Math.sin(2 * Math.PI * e.f * Sim.t); src(o1, o2, vs, 0.5); I(dp, -e.iin); I(dn, e.iin); e.vs = vs; break; }
         case 'R': G(a, c, 1 / e.r); break; case 'VM': case 'AM': G(a, c, 1 / e.r); break; case 'LAMP': case 'BUZZ': G(a, c, 1 / e.r); break;
         case 'POT': { const x = Math.max(0.01, Math.min(0.99, (e.inst.sim.pos !== undefined ? e.inst.sim.pos : 0.5))); G(a, d3, 1 / Math.max(1, e.r * x)); G(d3, c, 1 / Math.max(1, e.r * (1 - x))); break; }
         case 'LDR': { const l = e.inst.sim.light !== undefined ? e.inst.sim.light : 0.5; G(a, c, 1 / (200 + 1e6 * Math.pow(1 - l, 3))); break; }
@@ -219,6 +225,9 @@
       else if (e.t === 'FUSE') { const i = Math.abs(v[a] - v[c]) * (e.blown ? OFF : 50); if (i > e.rate * 1.5 && !e.blown) { e.heat += dt * (i / e.rate) ; if (e.heat > 0.4) { e.blown = true; Sim.events.push({ type: 'fuse', inst: e.inst }); } } else e.heat = Math.max(0, e.heat - dt); }
       else if (e.t === 'LAMP') { const vv = v[a] - v[c]; e.lum = e.lum === undefined ? 0 : e.lum; e.lum += (Math.min(1.3, (vv / e.rated) * (vv / e.rated)) - e.lum) * Math.min(1, dt / 0.08); }
     }
+    for (const e of Sim.els) { if (e.t === 'SCOPE') { const v = Sim.v; e.buf.push([Sim.t + dt, v[e.n[0]] - v[e.n[2]], v[e.n[1]] - v[e.n[2]]]); if (e.buf.length > 60000) e.buf.splice(0, 20000); }
+      else if (e.t === 'MM') { const v = Sim.v, vd = v[e.n[0]] - v[e.n[1]]; e.last = vd; e.acn++; e.acs += vd * vd; if (e.acn > 4000) { e.acs *= .5; e.acn *= .5; } }
+      else if (e.t === 'INV') { const v = Sim.v, io = ((e.vs || 0) - (v[e.n[2]] - v[e.n[3]])) / 0.5, vin = Math.max(1, v[e.n[0]] - v[e.n[1]]); e.iin = 0.001 + Math.max(0, (e.vs || 0) * io) / (vin * 0.9); } }
     Sim.t += dt; return ok; }
   Sim.events = [];
   /* advance the simulation by `seconds` of circuit time */
