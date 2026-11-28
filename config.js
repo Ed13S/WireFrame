@@ -7,4 +7,4 @@ window.AI_PROXY_URL = "https://wireframe-o8xv.onrender.com/api/ai";
 
 /* Where the "Download Mac app (.dmg)" menu item points. Put WireFrame.dmg in the repo root (or attach it to a
    GitHub Release and use the releases URL), then make sure this address matches. */
-window.DMG_URL = "https://github.com/Ed13S/WireFrame/releases/tag/v2.1.12";
+window.DMG_URL = "https://github.com/Ed13S/WireFrame/releases";
