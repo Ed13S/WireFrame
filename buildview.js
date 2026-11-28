@@ -66,9 +66,14 @@
     else if (k === 'battery') g += `<rect x="-.4" y="-3.6" width="3.2" height="3.4" rx=".3" fill="#2b2b2f"/><rect x="-.4" y="-3.6" width="3.2" height=".9" fill="#d4af37"/>` + txt(1.2, -1.4, inst.value || '', .6, '#fff') + `<circle cx="0" cy="0" r=".25" fill="#d33"/><circle cx="2" cy="0" r=".25" fill="#222"/>` + wire(0, 0, 0, -.2) + wire(2, 0, 2, -.2);
     else if (k === 'motor') { const a = live && live.ang || 0; g += `<circle cx="1" cy="-2.2" r="2" fill="#8c9099" stroke="#444" stroke-width=".08"/><g transform="translate(1 -2.2) rotate(${a})"><path d="M-1.4 0H1.4M0 -1.4V1.4" stroke="#222" stroke-width=".28" stroke-linecap="round"/></g>` + wire(0, 0, 0, -.2) + wire(2, 0, 2, -.2); }
     else if (k === 'free') g += `<rect x="-.5" y="-3" width="${Math.max(...L.map(l => l.x)) + 1}" height="2.8" rx=".3" fill="#5b6572"/>` + L.map(l => wire(l.x, l.y, l.x, -.2)).join('') + txt(Math.max(...L.map(l => l.x)) / 2, -1.6, (d.name || '').slice(0, 12), .5, '#fff');
-    else { const n = L.length, w = n - 1; g += `<rect x="-.6" y="-2.6" width="${w + 1.2}" height="2.4" rx=".25" fill="${/Display/.test(d.cat) ? '#1b4a8f' : '#1d6a46'}"/>` + txt(w / 2, -1.7, (inst.value || d.name || '').slice(0, 16), Math.min(.55, 1.7 * (w + 1.2) / Math.max(6, (inst.value || d.name || '').length * 2)), '#fff') + L.map(l => `<circle cx="${l.x}" cy="${l.y - .2}" r=".16" fill="#caa84a"/>` + `<text x="${l.x}" y="-.7" font-size=".36" fill="#fff" text-anchor="middle" class="bt">${esc((d.pins.find(p => p.n === l.pin) || {}).name || l.pin).slice(0, 4)}</text>`).join(''); }
+    else { const n = L.length, w = n - 1; g += `<rect x="-.6" y="-2.6" width="${w + 1.2}" height="2.4" rx=".25" fill="${/Display/.test(d.cat) ? '#1b4a8f' : '#1d6a46'}"/>` + txt(w / 2, -1.7, (inst.value || d.name || '').slice(0, 16), Math.min(.55, 1.7 * (w + 1.2) / Math.max(6, (inst.value || d.name || '').length * 2)), '#fff') + L.map(l => `<circle cx="${l.x}" cy="${l.y - .2}" r=".16" fill="#caa84a"/>` + `<text x="${l.x}" y="-.7" font-size=".36" fill="#fff" text-anchor="middle" class="bt">${esc((d.pins.find(p => p.n === l.pin) || {}).name || l.pin).slice(0, 4)}</text>`).join(''); g += L.map(l => txt(l.x, -.5, String((d.pins.find(p => p.n === l.pin) || {}).name || l.pin).slice(0, 4), .42, '#fff')).join(''); }
     return g; };
-  const legDots = inst => B.legPos(inst).map(l => `<circle cx="${l.x}" cy="${l.y}" r=".2" fill="#cfcfcf" stroke="#777" stroke-width=".05"/>`).join('');
+  const pinName = (inst, n) => { const d = A.def(inst.def) || {}, p = (d.pins || []).find(q => String(q.n) === String(n)) || {}; return 'Pin ' + n + (p.name && p.name !== String(n) ? ' · ' + p.name : '') + ' of ' + (inst.ref || d.name || ''); };
+  /* breadboard-style picture for the parts list */
+  A.thumbBuild = d => { try { const L = B.legsOf(d), k = B.kind(d); if (!L.length) return null; const mx = Math.max(...L.map(l => l.x)), my = Math.max(...L.map(l => l.y)), big = k === 'board', inst = { def: d.id, value: d.value, ref: '' };
+      const g = B.look(inst, null) + L.map(l => `<circle cx="${l.x}" cy="${l.y}" r=".22" fill="#cfcfcf" stroke="#777" stroke-width=".05"/>`).join(''); const y0 = big ? -1 : -4.2, h = my - y0 + 1.2, w = mx + 2.4;
+      return `<svg viewBox="-1.2 ${y0} ${w} ${h}" preserveAspectRatio="xMidYMid meet" class="bthumb">${g}</svg>`; } catch (e) { return null; } };
+  const legDots = inst => B.legPos(inst).map(l => `<circle cx="${l.x}" cy="${l.y}" r=".2" fill="#cfcfcf" stroke="#777" stroke-width=".05"><title>${esc(pinName(inst, l.pin))}</title></circle>`).join('');
 
   /* ---------- parts, supplies and jumper wires ---------- */
   const lens = { '+': '#d33', '-': '#222' };
@@ -179,7 +184,9 @@
     if (k === 'delete' || k === 'backspace') { e.preventDefault(); bdelete(); return true; }
     if (k === 'r') { if (S.placing) { V.rot = (V.rot + 1) % 4; drawOver(); return true; } V.sel.forEach(id => { const p = A.doc.parts.find(x => x.id === id); if (p && p.bb) p.bb.rot = ((p.bb.rot || 0) + 1) % 4; }); A.doc.master = 'build'; A.commit(); return true; }
     if (k === 'w') { A.setTool('wire'); return true; } if (k === 's') { A.setTool('select'); return true; } if (k === 'f' || k === 'home') { A.bfit(); return true; }
-    if (k === 'a') { const q = $('#q'); if (q) { q.focus(); q.select(); } return true; }
+    if (k === 'a') { e.preventDefault(); A.libOpen(!document.body.classList.contains('libopen')); return true; }
+    if (k === 'p') { e.preventDefault(); const c = [...document.querySelectorAll('#cats [data-cat]')].find(b => /Power|Source/.test(b.dataset.cat)); A.libOpen(true); if (c) c.click(); return true; }
+    if (k === 'i') { A.propsOpen && A.propsOpen(!document.body.classList.contains('propsopen')); return true; }
     if (k.startsWith('arrow')) { const dx = k === 'arrowleft' ? -1 : k === 'arrowright' ? 1 : 0, dy = k === 'arrowup' ? -1 : k === 'arrowdown' ? 1 : 0; let ch = false; V.sel.forEach(id => { const p = A.doc.parts.find(x => x.id === id); if (p && p.bb) { p.bb.x += dx; p.bb.y += dy; ch = true; } }); if (ch) { e.preventDefault(); A.doc.master = 'build'; A.commit(); } return true; }
     return false; };
   $('#bFit').onclick = () => A.mode === 'build' ? A.bfit() : A.fit();
@@ -189,7 +196,7 @@
     const keep = JSON.stringify(A.exportDoc());
     try { if (m === 'build') { if (A.doc.master !== 'build') A.buildFromSch(); A.mode = 'build'; } else { if (A.doc.master === 'build') await A.schFromBuild(); A.mode = 'sch'; } }
     catch (err) { /* never get stuck in a view: put the sheet back as it was and switch anyway */ console.error(err); try { A.importDoc(JSON.parse(keep)); } catch (e2) {} A.mode = m; A._syncing = false; A.toast('Could not convert between the views (' + (err && err.message || 'error') + '). Your circuit was kept as it was.', 4500); }
-    $('#svg').toggleAttribute('hidden', A.mode === 'build'); bsvg.toggleAttribute('hidden', A.mode !== 'build'); document.body.dataset.mode = A.mode; document.querySelectorAll('[data-mode]').forEach(b => b.classList.toggle('on', b.dataset.mode === A.mode));
+    $('#svg').toggleAttribute('hidden', A.mode === 'build'); bsvg.toggleAttribute('hidden', A.mode !== 'build'); document.body.dataset.mode = A.mode; A.refreshLib && A.refreshLib(); document.querySelectorAll('[data-mode]').forEach(b => b.classList.toggle('on', b.dataset.mode === A.mode));
     $('#hint').textContent = A.mode === 'build' ? 'Drag from any hole to run a jumper wire. Pick a part on the left to place it. Click a part to move it. R rotates.' : '';
     if (A.mode === 'build') { applyV(); setTimeout(A.bfit, 10); B.render(); } else { A.render(); A.fit(); } A.renderProps(); };
   document.querySelectorAll('[data-mode]').forEach(b => b.onclick = () => A.setMode(b.dataset.mode));

@@ -12,7 +12,7 @@
   }
   const pins = () => { try { const p = JSON.parse(localStorage.getItem('wf_pins')); if (Array.isArray(p)) return p; } catch (e) { /* default */ } return ['LED', 'R', 'C', 'D', 'SW', 'GND', 'V5']; };
   const setPins = a => { try { localStorage.setItem('wf_pins', JSON.stringify(a)); } catch (e) { /* ignore */ } };
-  const item = (d, thumb) => `<div class="pi" role="option" data-id="${esc(d.id)}" title="${esc(d.desc || d.name)}"><button class="pinb${pins().includes(d.id) ? ' on' : ''}" data-pin="${esc(d.id)}" title="${pins().includes(d.id) ? 'Unpin' : 'Pin to the top of this list'}">${pins().includes(d.id) ? '★' : '☆'}</button>${thumb ? A.thumb(d) : '<svg viewBox="0 0 10 7"><rect x="1" y="1" width="8" height="5" fill="none" stroke="var(--muted)" stroke-width=".3" stroke-dasharray=".8 .6"/></svg>'}<span>${esc(d.name)}<small>${esc(d.desc || d.cat || d.lib || '')}</small></span></div>`;
+  const item = (d, thumb) => `<div class="pi" role="option" data-id="${esc(d.id)}" title="${esc(d.desc || d.name)}"><button class="pinb${pins().includes(d.id) ? ' on' : ''}" data-pin="${esc(d.id)}" title="${pins().includes(d.id) ? 'Unpin' : 'Pin to the top of this list'}">${pins().includes(d.id) ? '★' : '☆'}</button>${thumb ? ((A.mode === 'build' && A.thumbBuild && A.thumbBuild(d)) || A.thumb(d)) : '<svg viewBox="0 0 10 7"><rect x="1" y="1" width="8" height="5" fill="none" stroke="var(--muted)" stroke-width=".3" stroke-dasharray=".8 .6"/></svg>'}<span>${esc(d.name)}<small>${esc(d.desc || d.cat || d.lib || '')}</small></span></div>`;
   let token = 0;
   async function renderList() {
     const my = ++token, box = $('#partList'), q = L.q.trim().toLowerCase(); let html = '';

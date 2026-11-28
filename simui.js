@@ -43,7 +43,7 @@
   function frame(now) {
     if (!st.play) return; const dt = Math.min(0.05, (now - st.last) / 1000 || 0.016); st.last = now;
     try { Sim.run(dt * st.speed); } catch (e) { console.error(e); pause(); A.toast('The simulator hit a problem: ' + e.message); return; }
-    const vs = Math.max(.1, Math.min(st.speed, 4)); st.dots += dt * vs; draw(dt * vs); updateStatus(); requestAnimationFrame(frame);
+    const vs = Math.max(.1, Math.min(st.speed, 4)); st.dots += dt * vs; draw(dt * vs); updateStatus(); st.raf = requestAnimationFrame(frame);
   }
   function draw(dt) {
     const v = Sim.v; let lo = 0, hi = 1; for (let i = 0; i < v.length; i++) { lo = Math.min(lo, v[i]); hi = Math.max(hi, v[i]); } let o = '';
@@ -81,9 +81,9 @@
     const ok = Sim.build(); const box = $('#msgs');
     box.innerHTML = Sim.errors.map(e => `<div class="msg bad">${esc(e)}</div>`).join('') + Sim.warnings.map(w => `<div class="msg">${esc(w)}</div>`).join('') + (Sim.notes || []).map(w => `<div class="msg ok">${esc(w)}</div>`).join('');
     if (!ok) { st.play = false; sync(); A.toast(Sim.errors[0]); return; }
-    powerPoints(); buildFlow(); st.ang = {}; A.mcu && A.mcu.start(); play();
+    powerPoints(); buildFlow(); st.ang = {}; A.mcu && A.mcu.stop && A.mcu.stop(); A.mcu && A.mcu.start(); play();
   }
-  function play() { if (!st.active) return start(); st.play = true; st.last = performance.now(); sync(); requestAnimationFrame(frame); }
+  function play() { if (!st.active) return start(); st.play = true; st.last = performance.now(); sync(); cancelAnimationFrame(st.raf); st.raf = requestAnimationFrame(frame); }
   function pause() { st.play = false; sync(); updateStatus(); }
   function stop() { A.mcu && A.mcu.stop(); st.play = false; st.active = false; simg.innerHTML = ''; $('#simbar').classList.remove('on'); sync(); A.render(); }
   function sync() { const b = $('#bPlay'); b.textContent = st.play ? '⏸ Pause' : (st.active ? '▶ Resume' : '▶ Play'); b.classList.toggle('playing', st.play); $('#bStop').hidden = !st.active; $('#bReset').hidden = !st.active; $('#simOpts').hidden = !st.active; }

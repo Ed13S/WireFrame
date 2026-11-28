@@ -203,3 +203,5 @@ body.propsopen #props{display:block}
 #ctxMenu{position:fixed;z-index:300;min-width:190px;background:var(--panel,#1b1b1b);color:inherit;border:1px solid var(--line,#555);border-radius:8px;box-shadow:0 10px 30px rgba(0,0,0,.5);padding:4px;display:flex;flex-direction:column}
 #ctxMenu button{display:flex;justify-content:space-between;gap:18px;text-align:left;background:transparent;border:0;color:inherit;padding:6px 10px;border-radius:5px;cursor:pointer;font:inherit;font-size:13px} #ctxMenu button:hover:not(:disabled){background:rgba(180,255,0,.18)} #ctxMenu button:disabled{opacity:.35;cursor:default} #ctxMenu kbd{opacity:.55;font:inherit;font-size:11px} #ctxMenu hr{border:0;border-top:1px solid var(--line,#444);margin:4px 2px}
 #bAutoNC{display:block;margin-top:6px}
+
+.bthumb text{font-family:Inter,system-ui,sans-serif;text-anchor:middle;dominant-baseline:central}
