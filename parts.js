@@ -42,7 +42,12 @@ window.PARTS = window.PARTS || [];
   add('LED', 'LED', 'Semiconductor', 'D', dpins, dbase.concat([L(-1.5, -2, -.2, -3.3), POLY(1, -.2, -3.3, -1, -3.2, -.5, -2.6), L(-.5, -1.5, .8, -2.8), POLY(1, .8, -2.8, 0, -2.7, .3, -2.1)]), { value: 'RED' });
   add('PHOTODIODE', 'Photodiode', 'Semiconductor', 'D', dpins, dbase.concat([L(-2.8, -3.3, -1.6, -2), POLY(1, -1.6, -2, -2.4, -2.1, -1.9, -2.7), L(-1.6, -3.5, -.4, -2.2), POLY(1, -.4, -2.2, -1.2, -2.3, -.7, -2.9)]), { value: 'BPW34' });
   add('BRIDGE', 'Bridge rectifier', 'Semiconductor', 'BR', [pin(1, '~', -4, 0), pin(2, '~', 4, 0), pin(3, '+', 0, -4), pin(4, '-', 0, 4)],
-    [POLY(0, -4, 0, 0, -4, 4, 0, 0, 4), L(-4, 0, -4, 0), T(-2.6, 0, '~', 'm', 1), T(2.6, 0, '~', 'm', 1), T(.9, -2.6, '+', 'm', 1), T(.9, 2.7, '-', 'm', 1)], { value: 'DB107' });
+    (() => { /* KiCad style: a diamond made of four diodes (anode -> cathode along each side) */
+      const out = [], d = (ax, ay, kx, ky) => { let mx = (ax + kx) / 2, my = (ay + ky) / 2, ln = Math.hypot(kx - ax, ky - ay), ux = (kx - ax) / ln, uy = (ky - ay) / ln, nx = -uy, ny = ux; const r = n => Math.round(n * 100) / 100;
+        const bx = mx - .6 * ux, by = my - .6 * uy, tx = mx + .6 * ux, ty = my + .6 * uy, w = .65; nx *= w; ny *= w;
+        out.push(L(ax, ay, bx, by), L(tx, ty, kx, ky), L(r(bx + nx), r(by + ny), r(bx - nx), r(by - ny)), L(r(bx + nx), r(by + ny), r(tx), r(ty)), L(r(bx - nx), r(by - ny), r(tx), r(ty)), L(r(tx + nx), r(ty + ny), r(tx - nx), r(ty - ny))); };
+      d(-4, 0, 0, -4); d(4, 0, 0, -4); d(0, 4, -4, 0); d(0, 4, 4, 0);
+      out.push(T(-2.4, 0, '~', 'm', .9), T(2.4, 0, '~', 'm', .9), T(0, -2.5, '+', 'm', .9), T(0, 2.6, '-', 'm', .9)); return out; })(), { value: 'DB107' });
   add('SCR', 'Thyristor (SCR)', 'Semiconductor', 'Q', [pin(1, 'A', 0, -3), pin(2, 'K', 0, 3), pin(3, 'G', 3, 2)],
     [L(0, -3, 0, -1.2), L(0, 1.2, 0, 3), POLY(0, -1.3, -1.2, 1.3, -1.2, 0, 1.2), L(-1.3, 1.2, 1.3, 1.2), L(0, 1.2, 1.2, 2), L(1.2, 2, 3, 2)], { value: 'TYN612' });
 
