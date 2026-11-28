@@ -148,3 +148,6 @@ The title block is only as tall as it needs to be: comment, name, company and pr
 
 ### Auto-route
 Press **Shift+W**, click a pin, then click the pin (or spot) where the wire should end: it is routed with as few bends as possible and stays out of parts. Right-click a wire and choose **Auto-route this wire** to tidy an existing one. Press **W** to go back to normal wires. Build view has Auto-route in the Info panel for jumper wires.
+
+### Transformer
+Select a transformer and set Primary/Secondary turns, voltage, current and inductance in Info. Editing one value updates the others (Vs = Vp·Ns/Np, Is = Ip·Np/Ns). The simulator now runs it as two coupled inductors, so it only passes AC.

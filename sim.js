@@ -13,7 +13,7 @@
   const byName = (inst, names) => { const pins = A.pinsOf(inst); return names.map(n => { const p = pins.find(q => (q.name || '').toUpperCase() === n) || pins.find(q => q.n === n); return p ? p.n : null; }); };
   const M = {
     R: { t: 'R', pins: ['1', '2'] }, R_US: { t: 'R', pins: ['1', '2'] }, RTRIM: { t: 'R', pins: ['1', '2'] }, POT: { t: 'POT', pins: ['1', '2', '3'] }, LDR: { t: 'LDR', pins: ['1', '2'] }, NTC: { t: 'NTC', pins: ['1', '2'] },
-    C: { t: 'C', pins: ['1', '2'] }, CP: { t: 'C', pins: ['1', '2'] }, CVAR: { t: 'C', pins: ['1', '2'] }, L: { t: 'L', pins: ['1', '2'] }, LCORE: { t: 'L', pins: ['1', '2'] }, FUSE: { t: 'FUSE', pins: ['1', '2'] },
+    C: { t: 'C', pins: ['1', '2'] }, CP: { t: 'C', pins: ['1', '2'] }, CVAR: { t: 'C', pins: ['1', '2'] }, L: { t: 'L', pins: ['1', '2'] }, TRANSFORMER: { t: 'XFMR', pins: ['1', '2', '3', '4'] }, LCORE: { t: 'L', pins: ['1', '2'] }, FUSE: { t: 'FUSE', pins: ['1', '2'] },
     D: { t: 'D', pins: ['1', '2'] }, D_SCHOTTKY: { t: 'D', pins: ['1', '2'], p: { is: 1e-7, n: 1.05 } }, D_ZENER: { t: 'ZD', pins: ['1', '2'] }, LED: { t: 'LED', pins: ['1', '2'] }, PHOTODIODE: { t: 'D', pins: ['1', '2'] },
     BAT: { t: 'V', pins: ['1', '2'] }, VDC: { t: 'V', pins: ['1', '2'] }, VAC: { t: 'VAC', pins: ['1', '2'] },
     SW: { t: 'SW', pins: ['1', '2'] }, SW_PUSH: { t: 'SW', pins: ['1', '2'], momentary: true }, SW_SPDT: { t: 'SPDT', pins: ['1', '2', '3'] },
@@ -76,6 +76,7 @@
         case 'LDR': case 'NTC': break;
         case 'C': el.c = Math.max(1e-15, num(inst.value, 1e-7)); el.st.v = 0; break;
         case 'L': el.l = Math.max(1e-9, num(inst.value, 1e-3)); el.st.i = 0; break;
+        case 'XFMR': { const x = inst.xf || {}, np = Math.max(1, +x.np || 100), ns = Math.max(1, +x.ns || 100), r = ns / np; el.l1 = Math.max(1e-6, +x.lp || 1); el.l2 = el.l1 * r * r; el.mm = 0.999 * Math.sqrt(el.l1 * el.l2); el.i1 = 0; el.i2 = 0; break; }
         case 'V': el.vs = num(inst.value, 5); el.rint = 0.1; break;
         case 'VAC': { const vs0 = String(inst.value || ''), mh = /([\d.]+)\s*(k|M)?\s*Hz/i.exec(vs0), mv = /([\d.]+)\s*(m)?\s*V/i.exec(vs0.replace(mh ? mh[0] : '', '')) || (mh ? null : /([\d.]+)/.exec(vs0)); el.amp = (mv ? +mv[1] : 5) * (mv && mv[2] ? 1e-3 : 1) * Math.SQRT2; el.f = mh ? +mh[1] * (/k/i.test(mh[2] || '') ? 1e3 : /M/.test(mh[2] || '') ? 1e6 : 1) : 50; if (/pk|peak/i.test(inst.value || '')) el.amp /= Math.SQRT2; el.rint = 0.1; el.off = 0; el.ph = 0; const sc = inst.src; if (sc && isFinite(+sc.f) && isFinite(+sc.v)) { el.f = Math.max(1e-3, +sc.f); el.amp = Math.abs(+sc.v) * (sc.peak ? 1 : Math.SQRT2); el.off = +sc.off || 0; el.ph = (+sc.ph || 0) * Math.PI / 180; } break; }
         case 'D': el.is = (m.p && m.p.is) || 1e-12; el.nn = (m.p && m.p.n) || 1.9; break;
@@ -135,6 +136,8 @@
         case 'FUSE': G(a, c, e.blown ? OFF : 1 / 0.02); break;
         case 'C': { const g = e.c / dt; G(a, c, g); I(a, g * e.st.v); I(c, -g * e.st.v); break; }
         case 'L': { const g = dt / e.l; G(a, c, g); I(a, -e.st.i); I(c, e.st.i); break; }
+        case 'XFMR': { const det = e.l1 * e.l2 - e.mm * e.mm, g = [[dt * e.l2 / det, -dt * e.mm / det], [-dt * e.mm / det, dt * e.l1 / det]], P = [[e.n[0], e.n[1]], [e.n[2], e.n[3]]], ist = [e.i1, e.i2];
+          for (let p = 0; p < 2; p++) { for (let q = 0; q < 2; q++) for (let sp = 0; sp < 2; sp++) for (let sq = 0; sq < 2; sq++) { const np_ = P[p][sp], nq = P[q][sq]; if (np_ > 0 && nq > 0) Mx[np_ - 1][nq - 1] += (sp ? -1 : 1) * (sq ? -1 : 1) * g[p][q]; } I(P[p][0], -ist[p]); I(P[p][1], ist[p]); } break; }
         case 'V': { const g = 1 / e.rint; G(a, c, g); I(a, g * e.vs); I(c, -g * e.vs); break; }
         case 'VAC': { const vs = (e.off || 0) + e.amp * Math.sin(2 * Math.PI * e.f * Sim.t + (e.ph || 0)); const g = 1 / e.rint; G(a, c, g); I(a, g * vs); I(c, -g * vs); break; }
         case 'SW': G(a, c, e.inst.sim.on ? 1000 : OFF); break;
@@ -209,7 +212,7 @@
     const v0 = Sim.v.slice();
     for (let it = 0; it < 60; it++) { x = stepOnce(dt); let md = 0; for (let i = 1; i < Sim.nodes; i++) { const nv = x[i - 1], d = Math.abs(nv - Sim.v[i]); md = Math.max(md, d / (1e-4 * Math.abs(nv) + 1e-6)); Sim.v[i] = nv; } if (md < 1 && it > 0) { ok = true; break; } }
     if (!ok) { Sim.v = v0; }
-    for (const e of Sim.els) { const v = Sim.v, [a, c] = e.n; if (e.t === 'C') e.st.v = v[a] - v[c]; else if (e.t === 'L') e.st.i += dt / e.l * (v[a] - v[c]);
+    for (const e of Sim.els) { const v = Sim.v, [a, c] = e.n; if (e.t === 'C') e.st.v = v[a] - v[c]; else if (e.t === 'L') e.st.i += dt / e.l * (v[a] - v[c]); else if (e.t === 'XFMR') { const det = e.l1 * e.l2 - e.mm * e.mm, v1 = v[e.n[0]] - v[e.n[1]], v2 = v[e.n[2]] - v[e.n[3]]; e.i1 += dt * (e.l2 * v1 - e.mm * v2) / det; e.i2 += dt * (e.l1 * v2 - e.mm * v1) / det; }
       else if (e.t === 'MOTOR') { const i = (v[a] - v[c] - e.ke * e.w) / e.r; e.w += dt * (e.ke * i - 2e-6 * e.w) / 2e-6; e.w = Math.max(-3000, Math.min(3000, e.w)); }
       else if (e.t === 'RELAY') { const vc = v[a] - v[c]; if (!e.inst.sim.on && vc > 0.7 * e.vr) e.inst.sim.on = true; else if (e.inst.sim.on && vc < 0.25 * e.vr) e.inst.sim.on = false; }
       else if (e.t === 'LED') { const vd = v[a] - v[c], i = e.is * (expl(vd / (e.nn * VT)) - 1); e.i = i; e.burn = i > 0.06 ? e.burn + dt : Math.max(0, e.burn - dt * .2); if (e.burn > 0.3 && !e.dead) { e.dead = true; Sim.events.push({ type: 'led', inst: e.inst }); } e.lum = e.lum === undefined ? 0 : e.lum; e.lum += (Math.min(1, Math.max(0, i / 0.02)) - e.lum) * Math.min(1, dt / 0.012); }
