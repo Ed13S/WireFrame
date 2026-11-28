@@ -129,3 +129,10 @@ Set a lesson, have students open a Lesson, predict the voltage, then press Play 
 
 ## 5. Known limits
 Negative supply rails (e.g. -12 V) in Build view, and wire-current animation in Build view are untested. No Servo/I2C/WiFi sketch libraries. A simplified kids' mode is not built yet.
+
+
+### Quick placing (schematic)
+**Shift+G** places a GND symbol, **Shift+V** a VCC symbol, **Shift+R** a resistor (plain G, V and R already mean grab, edit value and rotate, as in KiCad).
+
+### Check results
+In **Check**, press **Copy all** to copy every error and warning as plain text, ready to paste into an AI chat.
