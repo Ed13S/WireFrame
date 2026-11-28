@@ -14,7 +14,7 @@
   B.kind = (d) => { const id = d.id, n = d.pins.length, c = d.cat || '';
     const fp = d.footprint || '', evenNum = n % 2 === 0 && d.pins.every(p => !isNaN(num(p.n))); // AI/custom parts: the footprint tells us the real package
     if (fp && !BOARDS.has(id) && !d.builtin) { if (/DIP|SOIC|SO-?\d|SSOP|TSSOP/i.test(fp) && evenNum) return 'dip'; if (/TO-?220|TO-?247|TO-?3P/i.test(fp) && n === 3) return 'to220'; if (/TO-?92|SOT-?23|TO-?126/i.test(fp) && n === 3) return 'to92'; if (/SIP|PinHeader|Pin_Socket|Connector_Pin/i.test(fp) && n >= 2) return 'sip'; }
-    if (BOARDS.has(id)) return 'board'; if (id === 'SW_PUSH') return 'push'; if (id === 'POT' || id === 'RTRIM') return 'pot'; if (id === 'LED') return 'led'; if (id === 'SEG7') return 'seg';
+    if (BOARDS.has(id)) return 'board'; if (id === 'SW_PUSH') return 'push'; if (id === 'SW') return 'toggle'; if (id === 'SW_SPDT') return 'spdt'; if (id === 'POT' || id === 'RTRIM') return 'pot'; if (id === 'LED') return 'led'; if (id === 'SEG7') return 'seg';
     if (id === 'BUZZER') return 'buzzer'; if (id === 'MOTOR') return 'motor'; if (id === 'BAT' || id === 'VDC') return 'battery';
     if (FREE.has(id)) return 'free'; if (id === 'R' || id === 'R_US') return 'res'; if (/^(D|D_SCHOTTKY|D_ZENER)$/.test(id)) return 'diode'; if (id === 'CP') return 'elec'; if (id === 'C' || id === 'CVAR') return 'ceramic';
     if (n === 2) return 'axial'; if (n === 3) return /Semicond|Analog$/.test(c) || /^Q_|SCR|TL431|REG|LM35/.test(id) ? 'to92' : 'header';
@@ -25,11 +25,12 @@
   B.legsOf = (d) => { const k = B.kind(d), P = d.pins.slice(), L = []; const byN = p => d.pins.find(q => q.n === p);
     const push = (pin, x, y) => L.push({ pin, x, y });
     if (k === 'res' || k === 'diode' || k === 'axial') { push(P[0].n, 0, 0); push(P[1].n, 4, 0); }
+    else if (k === 'toggle') { push(P[0].n, 0, 0); push(P[1].n, 3, 0); }
     else if (k === 'led' || k === 'elec') { push(P[0].n, 0, 0); push(P[1].n, 1, 0); } else if (k === 'ceramic') { push(P[0].n, 0, 0); push(P[1].n, 2, 0); }
     else if (k === 'buzzer') { push(P[0].n, 0, 0); push(P[1].n, 2, 0); }
     else if (k === 'push') { push(P[0].n, 0, 0); push(P[0].n, 2, 0); push(P[1].n, 0, 3); push(P[1].n, 2, 3); }
     else if (k === 'to92' || k === 'to220' || k === 'pot') { P.forEach((p, i) => push(p.n, i, 0)); }
-    else if (k === 'battery' || k === 'motor' || k === 'free') { P.forEach((p, i) => push(p.n, i * 2, 0)); }
+    else if (k === 'battery' || k === 'motor' || k === 'free' || k === 'spdt') { P.forEach((p, i) => push(p.n, i * 2, 0)); }
     else if (k === 'dip') { const sorted = P.slice().sort((a, b) => num(a.n) - num(b.n)), h = sorted.length / 2; sorted.forEach((p, i) => i < h ? push(p.n, i, 0) : push(p.n, sorted.length - 1 - i, 3)); }
     else if (k === 'seg') { const sorted = P.slice(); const h = Math.ceil(sorted.length / 2); sorted.forEach((p, i) => i < h ? push(p.n, i, 0) : push(p.n, i - h, 3)); }
     else if (k === 'board') { const n = P.length, top = Math.ceil(n / 2); P.forEach((p, i) => i < top ? push(p.n, i + 1, 1) : push(p.n, i - top + 1, 11)); }

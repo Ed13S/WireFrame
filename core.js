@@ -1,6 +1,10 @@
 /* Schematic Studio core: model, geometry, library registry, nets, undo. No DOM here. */
 const App = window.App = {
-  VER: '2.1.3', // the one place the version number lives
+  VER: '2.1.3',
+  /* AC source settings: it.src = {v, peak, f, off, ph}; older sheets only have the label text, so parse that */
+  acOf(it) { if (it.src) return Object.assign({ v: 12, peak: false, f: 50, off: 0, ph: 0 }, it.src); const t = String(it.value || ''), mh = /([\d.]+)\s*(k|M)?\s*Hz/i.exec(t), mv = /([\d.]+)\s*(m)?\s*V/i.exec(t.replace(mh ? mh[0] : '', ''));
+    return { v: mv ? +mv[1] * (mv[2] ? 1e-3 : 1) : 12, peak: /pk|peak/i.test(t), f: mh ? +mh[1] * (/k/i.test(mh[2] || '') ? 1e3 : /M/.test(mh[2] || '') ? 1e6 : 1) : 50, off: 0, ph: 0 }; },
+  acLabel(q) { const f = q.f >= 1e3 ? (q.f / 1e3) + 'k' : q.f; return q.v + 'V' + (q.peak ? ' pk' : '') + ' ' + f + 'Hz'; }, // the one place the version number lives
   doc: null, LIB: {}, kicadIndex: null, kicadLoaded: {}, custom: [], hist: [], fut: [], listeners: [],
   meta: { title: 'Untitled schematic', author: '', date: new Date().toISOString().slice(0, 10) }
 };
